@@ -1,0 +1,33 @@
+﻿keys,en,zh
+UI_TITLE_EDITOR,REGION INSPECTOR,区域属性编辑器
+UI_LABEL_NAME,Name:,名称:
+UI_LABEL_TYPE,Type:,类型:
+UI_LABEL_DESC,Description:,简介/设定:
+UI_LABEL_COLOR,Map Color:,地图颜色:
+UI_LABEL_LANG,Language:,语言:
+UI_BTN_SAVE,Save World,保存世界
+UI_BTN_BACK,Go Up / Back,返回上一层
+UI_BTN_SELECT,Select,选择
+UI_BTN_PAINT,Paint,绘制
+UI_BTN_GEN,Gen,生成
+UI_BTN_CREATE,Create Region,新建区域
+TYPE_WORLD,World,世界
+TYPE_CONTINENT,Continent,大陆
+TYPE_NATION,Nation,国家
+TYPE_PROVINCE,Province,省份/地区
+TYPE_CITY,City,城市
+TYPE_HEXCELL,HexCell,六边格
+TERRAIN_OCEAN,Ocean,海洋
+TERRAIN_COAST,Coast,海岸/浅滩
+TERRAIN_PLAINS,Plains,平原
+TERRAIN_FOREST,Forest,森林
+TERRAIN_HILLS,Hills,丘陵
+TERRAIN_MOUNTAIN,Mountain,山脉
+TERRAIN_DESERT,Desert,沙漠
+TERRAIN_SNOW,Snow,雪地
+UI_BTN_RIVER,River,河流
+VIEW_PHYSICAL,Physical View,自然视图
+VIEW_POLITICAL,Political View,政区视图
+VIEW_RELIGIOUS,Religious View,宗教视图
+MSG_SAVED_TITLE,System,系统提示
+MSG_SAVED_TEXT,World Saved Successfully!,世界保存成功！

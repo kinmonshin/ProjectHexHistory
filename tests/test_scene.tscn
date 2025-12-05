@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://c4l88wttnedjs"]
+
+[ext_resource type="Script" uid="uid://dj5f8c680u808" path="res://tests/test_hex_math.gd" id="1_stypt"]
+
+[node name="HexMapViewer" type="Node2D"]
+script = ExtResource("1_stypt")

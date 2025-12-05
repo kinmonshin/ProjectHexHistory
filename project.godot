@@ -1,0 +1,28 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="六边格世界编辑器"
+run/main_scene="uid://cfqlpubgvlkf8"
+config/features=PackedStringArray("4.5", "Forward Plus")
+config/icon="res://icon.svg"
+
+[autoload]
+
+SessionManager="*res://core/session_manager.gd"
+
+[internationalization]
+
+locale/translation_remaps={
+"res://assets/translations.en.translation": PackedStringArray(),
+"res://assets/translations.zh.translation": PackedStringArray()
+}
+locale/translations=PackedStringArray("res://assets/translations.en.translation", "res://assets/translations.zh.translation")

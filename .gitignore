@@ -1,0 +1,18 @@
+# Godot 4+ specific ignores
+.godot/
+
+# Imported translations (optional)
+*.translation
+
+# Mono-specific ignores (if you use C#)
+.mono/
+
+# Any files and folders that you want to ignore
+# For example, to ignore a folder called "secret_stuff":
+# secret_stuff/
+
+# Your personal files to ignore
+*.txt
+*.pck
+*.exe
+exports/

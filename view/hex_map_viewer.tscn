@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://b2otoir310ikp"]
+
+[ext_resource type="Script" uid="uid://cdeybyut5kt0x" path="res://view/hex_map_viewer.gd" id="1_6mqnv"]
+[ext_resource type="Script" uid="uid://dsubsdslok2gs" path="res://view/camera_2d.gd" id="2_lie3e"]
+
+[node name="HexMapViewer" type="Node2D"]
+script = ExtResource("1_6mqnv")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+script = ExtResource("2_lie3e")

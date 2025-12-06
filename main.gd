@@ -63,6 +63,8 @@ func _ready():
 	# 连接编辑器的修改信号 -> 触发地图重绘
 	editor_panel.data_modified.connect(func(): map_viewer.queue_redraw())
 	
+	editor_panel.language_changed.connect(map_ui.refresh_locale)
+	
 	# 连接 UI 地形选择 -> Viewer
 	map_ui.terrain_selected.connect(map_viewer.set_paint_terrain)
 	

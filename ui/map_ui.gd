@@ -80,6 +80,17 @@ func _init_terrain_options():
 	# 或者，不仅设 UI，还顺便通知 Viewer 确保一致
 	terrain_selected.emit(HexCell.TerrainType.PLAINS)
 
+# 公开函数：刷新所有动态文本
+func refresh_locale():
+	# 重新初始化视图模式下拉框
+	_init_view_mode_options()
+	
+	# 重新初始化地形下拉框
+	_init_terrain_options()
+	
+	# 如果还有其他动态生成的 Label，也在这里刷新
+	# btn_paint.text = tr("UI_BTN_PAINT") # 这种如果 Inspector 没绑定好，也可以代码刷
+
 func _init_view_mode_options():
 	option_view_mode.clear()
 	var modes = ["VIEW_PHYSICAL", "VIEW_POLITICAL", "VIEW_RELIGIOUS"] # 定义 Keys

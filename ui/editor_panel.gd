@@ -15,6 +15,7 @@ extends CanvasLayer
 var current_data: RegionData
 
 signal data_modified # 新信号
+signal language_changed
 
 func _ready():
 	# 初始化下拉菜单
@@ -115,6 +116,7 @@ func _on_lang_changed(index: int):
 	# 我们需要手动刷新那些用代码生成的文本（如 Type 下拉框）
 	# 对于静态 Text 属性绑定的 KEY，Godot 会自动刷新（Godot 4 改进）
 	_refresh_dynamic_text()
+	language_changed.emit()
 
 func _refresh_dynamic_text():
 	# 重新填充 Type 下拉框

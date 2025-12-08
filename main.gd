@@ -7,6 +7,7 @@ const SAVE_PATH = "user://my_hex_world.tres"
 @onready var view_controller = $ViewStackController
 @onready var map_ui = $MapUI # 确保节点路径正确
 @onready var map_viewer = $HexMapViewer # 需要能访问到 map_viewer
+@onready var save_menu = $SaveLoadMenu
 
 func _ready():
 	# 1. World
@@ -65,6 +66,10 @@ func _ready():
 	
 	editor_panel.language_changed.connect(map_ui.refresh_locale)
 	
+	# --- 连接系统菜单 ---
+	# 当 EditorPanel 发出请求时 -> 打开 save_menu
+	editor_panel.system_menu_requested.connect(save_menu.open_menu)
+	
 	# 连接 UI 地形选择 -> Viewer
 	map_ui.terrain_selected.connect(map_viewer.set_paint_terrain)
 	
@@ -83,6 +88,53 @@ func _ready():
 	else:
 		print("未发现存档，初始化新世界...")
 		_init_new_world()
+	
+	# --- 新增连接 MapUI ---
+	# 1. 点击 "Move to" 按钮时，准备数据
+	map_ui.btn_move_to.pressed.connect(_prepare_move_dialog)
+	
+	# 2. 确认移动
+	map_ui.move_to_requested.connect(_on_move_to_confirmed)
+
+func _prepare_move_dialog():
+	var current_region = view_controller.stack.back()
+	var names: Array[String] = []
+	
+	# 获取所有子区域的名字
+	for child in current_region.children:
+		names.append(child.name)
+	
+	# 传给 UI
+	map_ui.setup_move_options(names)
+	map_ui.move_dialog.popup_centered() # 并在 Main 里触发弹窗
+
+func _on_move_to_confirmed(child_index: int):
+	var current_region = view_controller.stack.back()
+	
+	# 获取目标子区域
+	if child_index < 0 or child_index >= current_region.children.size():
+		return
+	var target_region = current_region.children[child_index]
+	
+	# 获取选中的格子
+	var selected_coords = map_viewer.get_selected_cells()
+	
+	print("正在移动 %d 个格子到 %s..." % [selected_coords.size(), target_region.name])
+	
+	# 执行数据迁移 (和 Create Region 类似，但不用 new region)
+	for coord in selected_coords:
+		var original_cell = current_region.get_hex(coord.x, coord.y)
+		if original_cell:
+			current_region.remove_hex(coord.x, coord.y) # 从当前层移除
+			target_region.hex_cells.append(original_cell) # 加入目标层
+	
+	# 收尾
+	map_viewer.clear_selection()
+	map_viewer._refresh_tiles() # 记得刷新！
+	map_viewer.queue_redraw()
+	
+	# 提示
+	print("移动完成")
 
 # 把之前的测试数据生成逻辑封装到这里
 func _init_new_world():
@@ -181,3 +233,37 @@ func _get_next_type(current: RegionData.Type) -> RegionData.Type:
 		RegionData.Type.NATION: return RegionData.Type.PROVINCE
 		RegionData.Type.PROVINCE: return RegionData.Type.CITY
 		_: return RegionData.Type.PROVINCE
+
+func _unhandled_input(event: InputEvent):
+	# 监听 Ctrl + S
+	if event.is_action_pressed("save"):
+		_perform_quick_save()
+		
+	if event.is_action_pressed("ui_cancel"): # 默认是 ESC
+	# 如果菜单没打开，就打开它
+		if not save_menu.visible:
+			save_menu.open_menu()
+			
+	# --- 新增：Debug 快捷键 ---
+	if event.is_action_pressed("toggle_debug"):
+		# 切换 Viewer 里的开关变量
+		map_viewer.show_debug_coords = not map_viewer.show_debug_coords
+		map_viewer.queue_redraw()
+		
+		# 可选：打印提示
+		print("Debug Coordinates: ", map_viewer.show_debug_coords)
+
+func _perform_quick_save():
+	# 1. 如果当前有已知的存档路径 -> 直接覆盖保存
+	if SessionManager.current_file_path != "":
+		SessionManager.save_world(SessionManager.current_file_path)
+		
+		# 可选：给个轻提示 (Toast)，或者简单打印
+		print("快速保存成功: ", SessionManager.current_file_path)
+		
+		# 甚至可以复用 SaveLoadMenu 里的 ConfirmDialog 来提示成功，
+		# 或者在 Main 里加一个简单的 Label 闪现一下 "Saved!"
+		
+	# 2. 如果是新建的世界 (还没存过盘) -> 打开存档菜单
+	else:
+		save_menu.open_menu()

@@ -47,6 +47,8 @@ func _init():
 func add_child(region: RegionData):
 	if not children.has(region):
 		children.append(region)
+		# 可以在这里打印一下，确保加进去了
+		print("RegionData: ", name, " 添加了子区域 ", region.name, " | 当前子节点数: ", children.size())
 
 # 添加六边格
 func add_hex(q: int, r: int):
@@ -75,3 +77,28 @@ func get_hex(q: int, r: int) -> HexCell:
 		if cell.q == q and cell.r == r:
 			return cell
 	return null
+
+# 深度优先查找：在自己和所有子孙节点中寻找指定坐标的格子
+func get_hex_recursive(q: int, r: int) -> HexCell:
+	# 1. 先查自己
+	for cell in hex_cells:
+		if cell.q == q and cell.r == r:
+			return cell
+	
+	# 2. 如果自己没有，查所有孩子
+	for child in children:
+		var found = child.get_hex_recursive(q, r)
+		if found:
+			return found
+	
+	# 3. 实在找不到
+	return null
+
+# 递归收集所有格子 (用于 Debug 显示)
+func get_all_hexes_recursive() -> Array[HexCell]:
+	var result: Array[HexCell] = []
+	result.append_array(hex_cells)
+	for child in children:
+		var child_hexes = child.get_all_hexes_recursive()
+		result.append_array(child_hexes)
+	return result

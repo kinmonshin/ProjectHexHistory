@@ -1,33 +1,40 @@
 ﻿keys,en,zh
-UI_TITLE_EDITOR,REGION INSPECTOR,区域属性编辑器
-UI_LABEL_NAME,Name:,名称:
-UI_LABEL_TYPE,Type:,类型:
-UI_LABEL_DESC,Description:,简介/设定:
 UI_LABEL_COLOR,Map Color:,地图颜色:
+UI_LABEL_DESC,Description:,简介/设定:
+UI_LABEL_FILENAME,File Name:,文件名称:
+UI_LABEL_NAME,Name:,名称:
 UI_LABEL_LANG,Language:,语言:
-UI_BTN_SAVE,Save World,保存世界
+UI_LABEL_TYPE,Type:,类型:
 UI_BTN_BACK,Go Up / Back,返回上一层
-UI_BTN_SELECT,Select,选择
-UI_BTN_PAINT,Paint,绘制
-UI_BTN_GEN,Gen,生成
+UI_BTN_CLOSE,Close,关闭 
 UI_BTN_CREATE,Create Region,新建区域
-TYPE_WORLD,World,世界
+UI_BTN_DELETE,Delete,删除 
+UI_BTN_GEN,Gen,生成
+UI_BTN_LOAD,Load Game,读取存档 
+UI_BTN_MOVETO,Move to...,划拨给...
+UI_BTN_PAINT,Paint,绘制
+UI_BTN_RIVER,River,河流
+UI_BTN_SAVE,Save,保存
+UI_BTN_SELECT,Select,选择
+UI_BTN_SYSTEM,System,系统菜单
+UI_TITLE_EDITOR,REGION INSPECTOR,区域属性编辑器
+TYPE_CITY,City,城市
 TYPE_CONTINENT,Continent,大陆
+TYPE_HEXCELL,HexCell,六边格
 TYPE_NATION,Nation,国家
 TYPE_PROVINCE,Province,省份/地区
-TYPE_CITY,City,城市
-TYPE_HEXCELL,HexCell,六边格
-TERRAIN_OCEAN,Ocean,海洋
+TYPE_WORLD,World,世界
 TERRAIN_COAST,Coast,海岸/浅滩
-TERRAIN_PLAINS,Plains,平原
+TERRAIN_DESERT,Desert,沙漠
 TERRAIN_FOREST,Forest,森林
 TERRAIN_HILLS,Hills,丘陵
 TERRAIN_MOUNTAIN,Mountain,山脉
-TERRAIN_DESERT,Desert,沙漠
+TERRAIN_OCEAN,Ocean,海洋
+TERRAIN_PLAINS,Plains,平原
 TERRAIN_SNOW,Snow,雪地
-UI_BTN_RIVER,River,河流
 VIEW_PHYSICAL,Physical View,自然视图
 VIEW_POLITICAL,Political View,政区视图
 VIEW_RELIGIOUS,Religious View,宗教视图
-MSG_SAVED_TITLE,System,系统提示
-MSG_SAVED_TEXT,World Saved Successfully!,世界保存成功！
+MSG_CONFIRM_DELETE,Are you sure to delete this save?,确定要删除此存档吗？
+MSG_OVERWRITE,Overwrite existing save file?,检测到同名文件，是否覆盖？
+WIN_TITLE_MOVE,Select Target Region,选择目标区域

@@ -6,16 +6,16 @@ extends CanvasLayer
 @onready var input_name = $PanelContainer/VBoxContainer/InputName
 @onready var option_type = $PanelContainer/VBoxContainer/OptionType
 @onready var input_desc = $PanelContainer/VBoxContainer/InputDesc
-@onready var btn_save = $PanelContainer/VBoxContainer/BtnSave
 @onready var btn_color_pick = $PanelContainer/VBoxContainer/BtnColorPick # 绑定新按钮
-@onready var save_dialog = $SaveDialog
 @onready var btn_lang = $PanelContainer/VBoxContainer/HBoxContainer/BtnLang # 路径自调
+@onready var btn_system = $PanelContainer/VBoxContainer/BtnSystem
 
 # 当前正在编辑的数据引用
 var current_data: RegionData
 
 signal data_modified # 新信号
 signal language_changed
+signal system_menu_requested
 
 func _ready():
 	# 初始化下拉菜单
@@ -34,9 +34,9 @@ func _ready():
 	input_name.text_changed.connect(_on_name_changed)
 	input_desc.text_changed.connect(_on_desc_changed)
 	option_type.item_selected.connect(_on_type_selected)
-	btn_save.pressed.connect(_on_save_pressed)
 	btn_color_pick.color_changed.connect(_on_color_changed) # 监听颜色改变
 	btn_lang.item_selected.connect(_on_lang_changed)
+	btn_system.pressed.connect(func(): system_menu_requested.emit())
 	
 	# 初始化语言按钮状态
 	var current_locale = TranslationServer.get_locale()
@@ -82,20 +82,6 @@ func _on_desc_changed():
 func _on_type_selected(index: int):
 	if current_data:
 		current_data.type = index as RegionData.Type
-
-func _on_save_pressed():
-	# 保存到 user:// 目录
-	var save_path = "user://my_hex_world.tres"
-	SessionManager.save_world(save_path)
-	# 可以加个弹窗提示，这里先打印
-	print("编辑器：保存请求已发送至 ", save_path)
-	
-	# 弹出提示
-	save_dialog.popup_centered()
-	
-	save_dialog.title = tr("MSG_SAVED_TITLE")
-	save_dialog.dialog_text = tr("MSG_SAVED_TEXT")
-	save_dialog.popup_centered()
 
 func _on_view_stack_controller_view_changed(current_region: RegionData) -> void:
 	pass # Replace with function body.

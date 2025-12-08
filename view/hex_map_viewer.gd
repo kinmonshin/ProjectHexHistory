@@ -34,6 +34,9 @@ var current_tool: String = "select"
 var selected_cells: Array[Vector2i] = []
 # 选中颜色
 
+# 新增：控制调试坐标显示的开关
+var show_debug_coords: bool = false 
+
 # 新增状态变量
 var is_river_mode: bool = false
 var last_river_coord: Vector2i = Vector2i(9999, 9999) # 记录鼠标上一次所在的格子
@@ -98,16 +101,24 @@ func set_paint_terrain(terrain_id: int):
 	current_paint_terrain = terrain_id
 	
 func _ready():
+	# ... (原有订阅信号代码)
 	if SessionManager:
 		SessionManager.world_loaded.connect(_on_world_loaded)
-	if SessionManager.current_world:
-		_on_world_loaded(SessionManager.current_world)
-		
-	# 从 TileMapLayer 获取真实的图块大小配置
+	
+	# 🔴 强制修复渲染层级 (Code Enforcement)
+	# 确保 TerrainLayer 永远在最底层 (-1)，而 viewer 自身在 0
+	# 这样 _draw 的内容 (红点/文字) 就会永远盖在贴图上面
+	if terrain_layer:
+		terrain_layer.z_index = -1
+		terrain_layer.show_behind_parent = true # 双重保险
+	
+	# 获取图块大小
 	if terrain_layer and terrain_layer.tile_set:
 		tile_size_vec = terrain_layer.tile_set.tile_size
-		# 如果之前调了 Hex Size，现在那个值已经没用了，
-		# 我们完全依赖 tile_size_vec
+	
+	if SessionManager.current_world:
+		_on_world_loaded(SessionManager.current_world)
+
 
 # 根据 TileSet 尺寸计算六边形的 6 个顶点
 func _get_hex_vertices(center: Vector2) -> PackedVector2Array:
@@ -141,107 +152,161 @@ func set_tool(tool_name: String):
 	current_tool = tool_name
 	print("地图模式切换为: ", current_tool)
 
+# res://view/hex_map_viewer.gd
+
 func _unhandled_input(event: InputEvent):
-	# 1. 鼠标松开逻辑 (重置河流连线)
+	
+	# --- 1. 鼠标松开逻辑 (重置画河状态) ---
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 			last_river_coord = Vector2i(9999, 9999)
 
-	# 2. 鼠标移动逻辑
+	# --- 2. 鼠标移动逻辑 (拖拽) ---
 	if event is InputEventMouseMotion:
 		var local_pos = get_local_mouse_position()
+		
+		# 使用新的 TileMap 坐标系统获取 Hex 坐标
 		var new_coord = _get_hex_from_mouse(local_pos)
+		
 		if new_coord != hovered_coord:
 			hovered_coord = new_coord
 			queue_redraw()
 			
-			# --- 拖拽绘制逻辑 ---
-			if current_tool == "paint" and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-				if is_river_mode:
-					# 河流模式
-					_try_paint_river(new_coord)
-				else:
-					# 地形模式
-					_try_paint_hex(new_coord)
+			# [Paint 模式]
+			if current_tool == "paint":
+				# 左键 -> 画地 / 画河
+				if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+					if is_river_mode:
+						_try_paint_river(new_coord)
+					else:
+						_try_paint_hex(new_coord)
+				
+				# (👇 补回丢失的逻辑) 右键 -> 擦除
+				elif Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+					if is_river_mode:
+						_try_erase_river(new_coord) # 河流模式：只擦河
+					else:
+						_try_erase_hex(new_coord)   # 地形模式：铲地
 			
-			# (可选) 保持之前的多选拖拽逻辑
+			# [Select 模式] 按住 Shift 拖拽多选
 			elif current_tool == "select" and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and Input.is_key_pressed(KEY_SHIFT):
 				_add_to_selection(new_coord)
 
-	# 3. 鼠标点击逻辑 (保持不变)
+	# --- 3. 鼠标点击逻辑 (单击) ---
 	elif event is InputEventMouseButton:
-		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			# [Paint 模式]
 			if current_tool == "paint":
-				if is_river_mode:
-					_try_paint_river(hovered_coord)
-				else:
-					_try_paint_hex(hovered_coord)
+				if event.button_index == MOUSE_BUTTON_LEFT:
+					if is_river_mode:
+						_try_paint_river(hovered_coord)
+					else:
+						_try_paint_hex(hovered_coord)
+				
+				# (👇 补回丢失的逻辑) 右键 -> 擦除
+				elif event.button_index == MOUSE_BUTTON_RIGHT:
+					# 必须在这里也区分模式！
+					if is_river_mode:
+						_try_erase_river(hovered_coord) # 河流模式：只擦河
+					else:
+						_try_erase_hex(hovered_coord)   # 地形模式：铲地
+			
+			# [Select 模式]
 			elif current_tool == "select":
-				# ... (select 逻辑)
-				if Input.is_key_pressed(KEY_SHIFT):
-					_toggle_selection(hovered_coord)
-				else:
-					hex_clicked.emit(hovered_coord)
+				if event.button_index == MOUSE_BUTTON_LEFT:
+					if Input.is_key_pressed(KEY_SHIFT):
+						_toggle_selection(hovered_coord)
+					else:
+						# 普通点击 -> 下钻
+						selected_cells.clear()
+						selection_changed.emit(0)
+						queue_redraw()
+						hex_clicked.emit(hovered_coord)
 
 # 核心：画河算法
 func _try_paint_river(coord: Vector2i):
 	if not current_region: return
-	
-	# 1. 获取当前鼠标指着的格子
-	var current_cell = current_region.get_hex(coord.x, coord.y)
-	
-	# 如果没地，不能画河 (或者你可以选择自动填陆地，这里暂定必须先有地)
+	var current_cell = current_region.get_hex_recursive(coord.x, coord.y)
 	if not current_cell: return
 	
-	if current_cell.terrain == HexCell.TerrainType.OCEAN or \
-		current_cell.terrain == HexCell.TerrainType.COAST:
-		return # 禁止在海里画河
+	# 禁止在海里画河
+	if current_cell.terrain == HexCell.TerrainType.OCEAN or current_cell.terrain == HexCell.TerrainType.COAST:
+		return
 
-	# 2. 状态 A: 刚按下鼠标 (起点)
+	# --- 状态 A: 起点 ---
 	if last_river_coord == Vector2i(9999, 9999):
-		# 这是一个新起点
-		current_cell.has_river = true
-		if not current_cell.has_river: # 标记为源头
+		
+		# 🟢 逻辑修复：
+		# 只有当它原来【不是】河流时，才标记为源头。
+		# 如果它已经是河流了，说明我们在从一条现有的河延伸，或者在中间分叉，
+		# 此时它绝对不应该变成源头。
+		if not current_cell.has_river:
 			current_cell.is_river_source = true
-		else:
-			# 如果它已经是河了，保持它的 source 状态不变 (或者强制设为 false? 视情况而定)
-			# 这里什么都不做比较安全，或者显式设为 false 防止误标
-			pass 
-		current_cell.river_direction = -1   # 暂时没有流向
-
-		last_river_coord = coord # 记录下来，准备连下一格
-		_refresh_tiles()
+		
+		# 无论如何，现在它有河了
+		current_cell.has_river = true
+		
+		# 不要重置 direction！保留它原有的流向（如果有的话）
+		# current_cell.river_direction = -1  <-- 删除这行！
+		
+		last_river_coord = coord
 		region_modified.emit()
 		queue_redraw()
 		return
 
-	# 3. 状态 B: 拖拽到了新格子 (连线)
+	# --- 状态 B: 拖拽连线 ---
 	if coord != last_river_coord:
-		# 找到上一个格子 (上游)
-		var prev_cell = current_region.get_hex(last_river_coord.x, last_river_coord.y)
+		var prev_cell = current_region.get_hex_recursive(last_river_coord.x, last_river_coord.y)
 		
 		if prev_cell:
-			# 计算流向：从 上一个 -> 当前
+			# 1. 检查是否“回撤” (Backtracking Logic)
+			# 如果 Current 已经指向了 Last，说明我们在往回拖
+			if current_cell.has_river and current_cell.river_direction != -1:
+				var neighbor = HexMath.get_neighbor(current_cell, current_cell.river_direction)
+				# 检查 Current 的流向目标是不是 Last
+				if neighbor == last_river_coord:
+					# 是回撤！切断 Current -> Last 的流向
+					current_cell.river_direction = -1
+					# 如果 Current 没有其他上游，它可能变回源头？(暂时不处理复杂情况)
+					
+					# 步步回退：Current 变成了新的“上一个”
+					last_river_coord = coord
+					queue_redraw()
+					return # <--- 关键：不再执行下面的连接逻辑
+
+			# 2. 正常的连接逻辑 (Prev -> Current)
 			var direction = _calculate_direction(last_river_coord, coord)
 			
-			# 只有相邻才能连线
 			if direction != -1:
-
+				# 建立连接
 				prev_cell.has_river = true
 				prev_cell.river_direction = direction
-
+				
+				# 更新当前节点
 				current_cell.has_river = true
+				# 如果 current 之前是源头，现在它有上游流入了，它就不再是源头
 				current_cell.is_river_source = false 
-
-				if current_cell.river_direction == -1:
-					pass 
-
-				_refresh_tiles()
-				region_modified.emit()
+				
 				queue_redraw()
+				region_modified.emit()
 		
-		# 更新记录，当前格子变成下一次连线的“上游”
 		last_river_coord = coord
+
+# 只擦除河流，不删除格子
+func _try_erase_river(coord: Vector2i):
+	if not current_region: return
+	var cell = current_region.get_hex_recursive(coord.x, coord.y)
+	if cell and cell.has_river:
+		# 重置河流属性
+		cell.has_river = false
+		cell.river_direction = -1
+		cell.is_river_source = false
+		
+		# 还要处理一种情况：如果它是别人的上游，要把别人的连接断开吗？
+		# 简单起见，暂不处理复杂的链式断开，只擦除当前格子的水属性
+		
+		region_modified.emit()
+		queue_redraw()
 
 # 辅助：计算方向
 func _calculate_direction(from: Vector2i, to: Vector2i) -> int:
@@ -272,7 +337,6 @@ func _toggle_selection(coord: Vector2i):
 	queue_redraw()
 	
 	selection_changed.emit(selected_cells.size())
-
 
 # 获取当前选中的所有格子 (给外部调用)
 func get_selected_cells() -> Array[Vector2i]:
@@ -313,41 +377,47 @@ func _try_paint_hex(coord: Vector2i):
 		region_modified.emit()
 		queue_redraw()
 
-
 # 动作：删除格子
 func _try_erase_hex(coord: Vector2i):
 	if not current_region: return
-	
-	if current_region.has_hex(coord.x, coord.y):
+	var target_cell = current_region.get_hex(coord.x, coord.y)
+	if target_cell:
+		# 1. 从数据中移除
 		current_region.remove_hex(coord.x, coord.y)
-		_refresh_tiles()
+		# 2. 核心修复：刷新贴图显示
+		_refresh_tiles() 
+		# 3. 刷新相关信号
 		region_modified.emit()
 		queue_redraw()
 
-# res://view/hex_map_viewer.gd
-
 # 获取某个 HexCell 在屏幕上的绝对中心点 (基于 TileMapLayer)
 func _get_cell_center(q: int, r: int) -> Vector2:
-	# 1. 先转成 TileMap 坐标
 	var tile_pos = _axial_to_tilemap(q, r)
-	
-	# 2. 问 TileMapLayer 这个格子在哪
-	# 注意：map_to_local 返回的是格子的中心像素坐标
 	if terrain_layer:
-		return terrain_layer.map_to_local(tile_pos)
+		# map_to_local 返回的是相对 TerrainLayer 的坐标
+		# 加上 terrain_layer.position 转换为相对于 HexMapViewer 的坐标
+		return terrain_layer.map_to_local(tile_pos) + terrain_layer.position
 	else:
-		# 降级方案 (如果还没加载图层，才用数学公式，仅作备用)
 		return HexMath.hex_to_pixel(q, r, hex_size)
+
 
 # 获取鼠标点击的 Hex 坐标 (反向查询)
 func _get_hex_from_mouse(local_mouse_pos: Vector2) -> Vector2i:
 	if terrain_layer:
+		# --- 核心修复 ---
+		# local_mouse_pos 是相对于 HexMapViewer (父节点) 的。
+		# 我们需要把它转换成相对于 TerrainLayer (子节点) 的坐标。
+		# 因为 TerrainLayer 可能被我们手动移动了位置 (Position) 来对齐贴图。
+		var terrain_local_pos = terrain_layer.to_local(to_global(local_mouse_pos))
+		
 		# 1. 问 TileMapLayer 这是哪个格子
-		var tile_pos = terrain_layer.local_to_map(local_mouse_pos)
-		# 2. 转回 Axial (需要写一个反向转换公式)
+		var tile_pos = terrain_layer.local_to_map(terrain_local_pos)
+		
+		# 2. 转回 Axial
 		return _tilemap_to_axial(tile_pos)
 	else:
 		return HexMath.pixel_to_hex(local_mouse_pos, hex_size)
+
 
 # 补充：TileMap坐标 -> Axial坐标 (Odd-r / Horizontal 的逆运算)
 func _tilemap_to_axial(tile_pos: Vector2i) -> Vector2i:
@@ -378,25 +448,34 @@ func _on_world_loaded(world: RegionData):
 func _draw():
 	if not current_region: return
 
+	# 1. 正常视图绘制逻辑 (恢复)
 	match current_view_mode:
 		
-		# --- 情况 A: 政治视图 (Political) ---
-		# 逻辑：需要画填充色 (Color) + 网格线 (Grid) + 河流 (可选)
+		# --- 政治视图 (色块 + 网格) ---
 		ViewMode.POLITICAL:
 			_draw_political_recursive(current_region)
 			
-		# --- 情况 B: 自然视图 (Physical) ---
-		# 逻辑：底层由 TileMapLayer 画贴图 (代码不在这里)
-		#      这里只画叠加层：河流 (River) + 网格线 (Grid)
+		# --- 自然视图 (贴图由TileMap负责 + 河流/网格叠加) ---
 		ViewMode.PHYSICAL:
 			_draw_physical_overlay_recursive(current_region)
 
-	# --- 公共绘制：高亮框 ---
+	# 2. 多选高亮 (恢复)
+	if not selected_cells.is_empty():
+		for coord in selected_cells:
+			var center = _get_cell_center(coord.x, coord.y)
+			var points = _get_hex_vertices(center)
+			
+			# 绘制半透明青色填充
+			draw_colored_polygon(points, selection_color)
+			# 绘制边框
+			points.append(points[0])
+			draw_polyline(points, Color(0, 1, 1), 3.0)
+
+	# 3. 鼠标悬停高亮 (恢复优化后的逻辑)
 	if hovered_coord != Vector2i(9999, 9999):
-		
 		var highlight_color = Color.WHITE
 		var line_width = 2.0
-		var do_fill = false # 是否填充半透明色
+		var do_fill = false
 		
 		# 根据工具改变样式
 		if current_tool == "paint":
@@ -406,26 +485,43 @@ func _draw():
 			else:
 				highlight_color = Color(0.0, 1.0, 0.0, 0.8) # 绿色提示画地
 				line_width = 4.0
-				do_fill = true # 绘制模式下填充一下，让瞄准更清楚
+				do_fill = true 
 				
 		elif current_tool == "select":
-			# 选择模式：优雅的白色细框
 			highlight_color = Color(1.0, 1.0, 1.0, 0.4) 
 			line_width = 2.0
-			# 或者：如果您希望选择模式下完全不显示框，除非点击，可以在这里 return
 		
-		# 开始绘制
 		var center = _get_cell_center(hovered_coord.x, hovered_coord.y)
 		var points = _get_hex_vertices(center)
 		
 		if do_fill:
-			# 绘制半透明填充
 			var fill_c = highlight_color
 			fill_c.a = 0.2
 			draw_colored_polygon(points, fill_c)
 			
 		points.append(points[0])
 		draw_polyline(points, highlight_color, line_width)
+
+	# 4. 调试坐标 (恢复 F3 开关控制 + 递归查找修复 + 居中修复)
+	if current_region and show_debug_coords:
+		var font = ThemeDB.fallback_font
+		var font_size = 16
+		
+		# ✅ 关键修复：使用递归获取所有格子 (解决 World 层级不显示的问题)
+		var all_cells = current_region.get_all_hexes_recursive()
+		
+		for cell in all_cells:
+			var center = _get_cell_center(cell.q, cell.r)
+			var text = "%d,%d" % [cell.q, cell.r]
+			
+			var text_size = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+			var ascent = font.get_ascent(font_size)
+			
+			# ✅ 关键修复：基线居中算法
+			var text_pos = center + Vector2(-text_size.x / 2.0, ascent / 2.5)
+			
+			draw_string(font, text_pos + Vector2(1, 1), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(0, 0, 0, 0.8))
+			draw_string(font, text_pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color.WHITE)
 
 # 递归绘制：政治视图 (色块 + 网格)
 func _draw_political_recursive(region: RegionData):
@@ -522,24 +618,22 @@ func _draw_region_recursive(region: RegionData):
 
 # 新增：绘制河流
 func _draw_river(cell: HexCell):
-	var start_pos = HexMath.hex_to_pixel(cell.q, cell.r, hex_size)
+	var start_pos = _get_cell_center(cell.q, cell.r)
 	
-	# 计算终点：邻居的中心
-	# 注意：这只是简化的画法（中心到中心）。
-	# 更漂亮的画法是：中心 -> 边缘中点 -> 邻居中心 (贝塞尔曲线)
-	
-	# 获取流向的邻居坐标
-	var neighbor_coord = HexMath.get_neighbor(cell, cell.river_direction)
-	# 转换邻居像素坐标
-	var end_pos = HexMath.hex_to_pixel(neighbor_coord.x, neighbor_coord.y, hex_size)
-	
-	# 绘制线条
-	# 颜色：深蓝，宽度：3.0
-	draw_line(start_pos, end_pos, Color(0.2, 0.4, 0.8), 3.0)
-	
-	# 画个小圆点表示源头
+	# --- 修复 1: 绘制源头圆点 (解决源头不可见问题) ---
+	# 只有当它是源头时才画
 	if cell.is_river_source:
-		draw_circle(start_pos, 4.0, Color(0.2, 0.4, 0.8))
+		# 画一个深蓝色圆点，稍微大一点以便看清
+		draw_circle(start_pos, 6.0, Color(0.1, 0.3, 0.9))
+	
+	# --- 修复 2: 严格检查流向 (解决斜向连线 Bug) ---
+	# 只有当流向是有效的 (0~5) 时，才计算邻居并画线
+	if cell.river_direction >= 0 and cell.river_direction < 6:
+		var neighbor_coord = HexMath.get_neighbor(cell, cell.river_direction)
+		var end_pos = _get_cell_center(neighbor_coord.x, neighbor_coord.y)
+		
+		# 绘制河道
+		draw_line(start_pos, end_pos, Color(0.2, 0.4, 1.0), 4.0)
 
 func _draw_hex_at(q: int, r: int, inner_color: Color, border_color: Color, width: float = 1.0):
 	var center = _get_cell_center(q, r)

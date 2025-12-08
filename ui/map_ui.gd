@@ -7,6 +7,7 @@ signal create_region_requested # 新信号
 signal view_mode_changed(mode_id: int)
 signal generate_requested # 新信号
 signal river_mode_toggled(is_on: bool) # 新信号
+signal move_to_requested(target_index: int) # 发出信号：移动到第几个子节点
 
 # 新增：工具切换信号
 signal tool_changed(tool_name: String) # "select" or "paint"
@@ -22,6 +23,10 @@ signal terrain_selected(terrain_id: int) # 新信号
 @onready var btn_generate = $Panel/HBoxContainer/BtnGenerate
 @onready var btn_river_mode = $Panel/HBoxContainer/BtnRiverMode
 
+@onready var btn_move_to = $Panel/HBoxContainer/BtnMoveTo # 路径自调
+@onready var move_dialog = $MoveDialog
+@onready var option_target = $MoveDialog/OptionTargetRegion
+
 func _ready():
 	btn_back.pressed.connect(func(): back_requested.emit())
 	
@@ -29,8 +34,6 @@ func _ready():
 	btn_tool_select.toggled.connect(_on_tool_toggled.bind("select"))
 	btn_tool_paint.toggled.connect(_on_tool_toggled.bind("paint"))
 	btn_create.pressed.connect(func(): create_region_requested.emit())
-	
-	# 默认选中 Select
 	btn_tool_select.button_pressed = true
 	
 	# 初始化下拉框 (如果没有在编辑器里手动加)
@@ -44,6 +47,9 @@ func _ready():
 	option_view_mode.item_selected.connect(func(idx): view_mode_changed.emit(idx))
 	btn_generate.pressed.connect(func(): generate_requested.emit())
 	btn_river_mode.toggled.connect(func(pressed): river_mode_toggled.emit(pressed))
+	btn_move_to.pressed.connect(_on_btn_move_pressed)
+	move_dialog.confirmed.connect(_on_move_confirmed)
+	
 	# 初始化地形下拉框
 	_init_terrain_options()
 	
@@ -80,6 +86,30 @@ func _init_terrain_options():
 	# 或者，不仅设 UI，还顺便通知 Viewer 确保一致
 	terrain_selected.emit(HexCell.TerrainType.PLAINS)
 
+func _on_move_confirmed():
+	var idx = option_target.selected
+	if idx != -1:
+		move_to_requested.emit(idx)
+
+# 供 Main 调用：填充目标列表
+func setup_move_options(region_names: Array[String]):
+	option_target.clear()
+	for n in region_names:
+		option_target.add_item(n)
+	
+	# 如果没有子区域，禁用确认键
+	move_dialog.get_ok_button().disabled = region_names.is_empty()
+
+# 点击移动按钮：填充列表并弹窗
+func _on_btn_move_pressed():
+	# 我们需要获取当前的子区域列表。
+	# 这里 MapUI 不直接持有数据，可以发信号问 Main，或者由 Main 调用 MapUI 的一个 setup 函数。
+	# 为了解耦，我们发一个信号 "request_child_list"，或者 Main 在 update selection 时就把数据传过来？
+	
+	# 简单方案：在 Main 里连接 btn_move_to 的 pressed 信号来填充数据。
+	# 所以这里只负责弹窗，数据填充交给外部。
+	move_dialog.popup_centered()
+
 # 公开函数：刷新所有动态文本
 func refresh_locale():
 	# 重新初始化视图模式下拉框
@@ -101,9 +131,10 @@ func _init_view_mode_options():
 	# 注意：这只是 UI 显示选中，并不会自动触发 item_selected 信号
 	option_view_mode.selected = 0
 
-# 供外部调用：更新按钮状态
+# 外部调用：更新按钮状态
 func update_create_button(has_selection: bool):
 	btn_create.disabled = not has_selection
+	btn_move_to.disabled = not has_selection # 移动按钮同理
 
 func _on_tool_toggled(is_pressed: bool, tool_name: String):
 	if is_pressed:

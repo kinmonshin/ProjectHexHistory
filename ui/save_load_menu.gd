@@ -8,6 +8,7 @@ extends CanvasLayer
 @onready var btn_delete = $PanelContainer/HBoxContainer/VBoxContainer/BtnDelete
 @onready var btn_close = $PanelContainer/HBoxContainer/VBoxContainer/BtnClose
 @onready var confirm_dialog = $ConfirmOverwrite
+@onready var btn_lang = $PanelContainer/HBoxContainer/VBoxContainer/HBoxContainer/BtnLang
 
 func _ready():
 	# 初始隐藏
@@ -23,6 +24,43 @@ func _ready():
 	btn_save.pressed.connect(_on_save_pressed)
 	if confirm_dialog:
 		confirm_dialog.confirmed.connect(_perform_save)
+	
+	_init_language_options()
+	# 2. 连接信号
+	btn_lang.item_selected.connect(_on_lang_changed)
+	# 3. 监听语言变化信号 (用于刷新菜单自己的文本)
+	SignalBus.locale_changed.connect(_refresh_menu_text)
+
+func _init_language_options():
+	btn_lang.clear()
+	# 添加选项 (ID 0 = English, ID 1 = 中文)
+	btn_lang.add_item("English", 0)
+	btn_lang.add_item("中文", 1)
+	
+	# 根据当前系统语言设置选中项
+	var current_locale = TranslationServer.get_locale()
+	if current_locale.begins_with("zh"):
+		btn_lang.selected = 1
+	else:
+		btn_lang.selected = 0
+
+func _on_lang_changed(index: int):
+	# 1. 切换引擎语言
+	if index == 0:
+		TranslationServer.set_locale("en")
+	else:
+		TranslationServer.set_locale("zh")
+	
+	# 2. 通知全世界 (包括自己)
+	SignalBus.locale_changed.emit()
+
+# 刷新菜单自己的动态文本 (如果有的话)
+# 注意：Godot 4 对于 Inspector 设置的 Key 会自动刷新，
+# 但如果是代码生成的文本（比如列表里的时间格式），可能需要手动刷新。
+# 这里主要是个保险。
+func _refresh_menu_text():
+	# 刷新文件列表（因为里面的 "刚刚", "昨天" 等时间描述可能需要翻译）
+	refresh_list()
 
 # 打开菜单
 func open_menu():

@@ -1,0 +1,71 @@
+[gd_scene load_steps=3 format=3 uid="uid://cu1de8o1smysn"]
+
+[ext_resource type="Script" uid="uid://5hnewjut1t8s" path="res://ui/components/lens_bar.gd" id="1_k88fx"]
+
+[sub_resource type="ButtonGroup" id="ButtonGroup_k88fx"]
+
+[node name="LensBar" type="PanelContainer"]
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_k88fx")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="BtnViewPhysical" type="Button" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "VIEW_PHYSICAL"
+
+[node name="BtnViewPolitical" type="Button" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "VIEW_POLITICAL"
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="BtnToolSelect" type="Button" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+toggle_mode = true
+button_pressed = true
+button_group = SubResource("ButtonGroup_k88fx")
+text = "UI_BTN_SELECT"
+
+[node name="BtnToolPaint" type="Button" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+toggle_mode = true
+button_group = SubResource("ButtonGroup_k88fx")
+text = "UI_BTN_PAINT"
+
+[node name="BtnToolRiver" type="Button" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+toggle_mode = true
+text = "UI_BTN_RIVER"
+
+[node name="OptionTerrain" type="OptionButton" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="BtnGen" type="Button" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "UI_BTN_GEN"
+
+[node name="BtnCreate" type="Button" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "UI_BTN_CREATE"
+
+[node name="BtnMoveTo" type="Button" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "UI_BTN_MOVETO"
+
+[node name="BtnClear" type="Button" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "UI_BTN_DELETE"

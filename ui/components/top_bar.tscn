@@ -1,0 +1,28 @@
+[gd_scene load_steps=2 format=3 uid="uid://cko8bh3w6e7dp"]
+
+[ext_resource type="Script" uid="uid://c13ifeoujy0h0" path="res://ui/components/top_bar.gd" id="1_ur1qq"]
+
+[node name="TopBar" type="PanelContainer"]
+script = ExtResource("1_ur1qq")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="BtnBack" type="Button" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "返回上一层"
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="LblBreadcrumbs" type="Label" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "World > Nation..."
+
+[node name="BtnSystem" type="Button" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "系统菜单"

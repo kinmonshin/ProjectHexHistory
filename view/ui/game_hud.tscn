@@ -1,0 +1,67 @@
+[gd_scene load_steps=5 format=3 uid="uid://c7nea6xc0h8yr"]
+
+[ext_resource type="PackedScene" uid="uid://cko8bh3w6e7dp" path="res://ui/components/top_bar.tscn" id="1_2iti3"]
+[ext_resource type="PackedScene" uid="uid://cu1de8o1smysn" path="res://ui/components/lens_bar.tscn" id="2_5mxp6"]
+[ext_resource type="PackedScene" uid="uid://bl8boov01wij0" path="res://ui/components/outliner.tscn" id="3_5mxp6"]
+[ext_resource type="PackedScene" uid="uid://ce8xollot8dd2" path="res://ui/editor_panel.tscn" id="4_rl7k5"]
+
+[node name="GameHUD" type="CanvasLayer"]
+
+[node name="Control" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TopBar" parent="Control" instance=ExtResource("1_2iti3")]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 37.0
+grow_horizontal = 2
+
+[node name="LensBar" parent="Control" instance=ExtResource("2_5mxp6")]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -219.0
+offset_top = -57.0
+offset_right = 219.00012
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="LeftDock" type="MarginContainer" parent="Control"]
+layout_mode = 1
+anchors_preset = -1
+anchor_bottom = 1.0
+offset_top = 60.0
+offset_right = 250.0
+offset_bottom = -80.0
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Outliner" parent="Control/LeftDock" instance=ExtResource("3_5mxp6")]
+layout_mode = 2
+
+[node name="RightDock" type="MarginContainer" parent="Control"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = 60.0
+offset_bottom = -80.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="EditorPanel" parent="Control/RightDock" instance=ExtResource("4_rl7k5")]
+layout_mode = 2

@@ -5,10 +5,11 @@ extends Node
 # --- 新增信号 ---
 # 当视图切换时，发出此信号，把当前的区域数据传出去
 signal view_changed(current_region: RegionData) 
+signal request_navigate_back() 
+signal breadcrumbs_updated(stack_names: Array[String])
 
 # 依赖引用
 @export var map_viewer: HexMapViewer
-@export var map_ui: MapUI
 
 # 视图堆栈：存储从根节点到当前节点的所有 RegionData
 var stack: Array[RegionData] = []
@@ -17,14 +18,18 @@ func _ready():
 	# 监听 SessionManager，当加载新世界时重置堆栈
 	if SessionManager:
 		SessionManager.world_loaded.connect(_on_world_loaded)
-	
-	# 监听 UI 返回按钮
-	if map_ui:
-		map_ui.back_requested.connect(_on_back_pressed)
-		
+
 	# 监听地图点击（下钻逻辑）
 	if map_viewer:
 		map_viewer.hex_clicked.connect(_on_hex_clicked)
+		
+	# ✅ 新增：监听“返回”信号
+	# 以前是 map_ui.back_requested.connect(...)
+	# 现在是谁发的无所谓，只要总线说“要返回”，我就执行
+	if SignalBus:
+		SignalBus.request_navigate_back.connect(_on_back_pressed)
+		
+	SignalBus.request_navigate_to.connect(_push_view)
 
 # 当加载新世界时，初始化堆栈
 func _on_world_loaded(world_root: RegionData):
@@ -44,24 +49,18 @@ func _on_back_pressed():
 
 # 统一更新视图和UI
 func _update_view():
-	var current = stack.back() # 获取栈顶元素
+	var current = stack.back()
 	
-	# 1. 通知渲染器显示当前节点
-	map_viewer._on_world_loaded(current) 
+	# 1. 通知地图渲染器 (原有)
+	map_viewer._on_world_loaded(current)
 	
-	# 2. 更新 UI 面包屑
-	map_ui.update_breadcrumbs(stack)
-	map_ui.set_back_enabled(stack.size() > 1)
+	# 2. 构建面包屑并通知 TopBar (原有)
+	var names: Array[String] = []
+	for r in stack: names.append(r.name)
+	SignalBus.breadcrumbs_updated.emit(names)
 	
-	# --- 新增：发射信号 ---
-	# 通知任何监听者（比如编辑器面板）："我们换地图了，快更新显示！"
-	view_changed.emit(current)
-	
-	# --- 新增：重置工具状态 ---
-	# 我们需要告诉 UI 把按钮弹起来，并告诉 Viewer 切回 Select
-	# 这需要 MapUI 提供一个方法
-	if map_ui:
-		map_ui.reset_tool_to_select()
+	# 3. 🔴 关键修复：通知大纲和属性面板！
+	SignalBus.navigation_view_changed.emit(current)
 
 # 处理点击下钻逻辑
 func _on_hex_clicked(coord: Vector2i):

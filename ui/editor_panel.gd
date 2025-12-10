@@ -1,21 +1,17 @@
 # res://view/ui/editor_panel.gd
 class_name EditorPanel
-extends CanvasLayer
+extends PanelContainer
 
 # 绑定 UI 控件
-@onready var input_name = $PanelContainer/VBoxContainer/InputName
-@onready var option_type = $PanelContainer/VBoxContainer/OptionType
-@onready var input_desc = $PanelContainer/VBoxContainer/InputDesc
-@onready var btn_color_pick = $PanelContainer/VBoxContainer/BtnColorPick # 绑定新按钮
-@onready var btn_lang = $PanelContainer/VBoxContainer/HBoxContainer/BtnLang # 路径自调
-@onready var btn_system = $PanelContainer/VBoxContainer/BtnSystem
+@onready var input_name: LineEdit = $PanelContainer/MarginContainer/VBoxContainer/InputName
+@onready var option_type: OptionButton = $PanelContainer/MarginContainer/VBoxContainer/OptionType
+@onready var input_desc: TextEdit = $PanelContainer/MarginContainer/VBoxContainer/InputDesc
+@onready var btn_color_pick: ColorPickerButton = $PanelContainer/MarginContainer/VBoxContainer/BtnColorPick
 
 # 当前正在编辑的数据引用
 var current_data: RegionData
 
 signal data_modified # 新信号
-signal language_changed
-signal system_menu_requested
 
 func _ready():
 	# 初始化下拉菜单
@@ -35,16 +31,9 @@ func _ready():
 	input_desc.text_changed.connect(_on_desc_changed)
 	option_type.item_selected.connect(_on_type_selected)
 	btn_color_pick.color_changed.connect(_on_color_changed) # 监听颜色改变
-	btn_lang.item_selected.connect(_on_lang_changed)
-	btn_system.pressed.connect(func(): system_menu_requested.emit())
 	
-	# 初始化语言按钮状态
-	var current_locale = TranslationServer.get_locale()
-	# Godot 的 locale 可能是 "zh", "zh_CN", "zh_SG" 等
-	if current_locale.begins_with("zh"):
-		btn_lang.selected = 1 # 对应 "中文" Item 的索引
-	else:
-		btn_lang.selected = 0 # 对应 "English"
+	SignalBus.selection_updated.connect(_on_selection_updated)
+	SignalBus.navigation_view_changed.connect(_on_view_changed)
 
 # --- 外部调用接口 ---
 
@@ -52,6 +41,22 @@ func _ready():
 func bind_data(data: RegionData):
 	current_data = data
 	refresh_ui()
+
+func _on_selection_updated(items: Array):
+	if items.size() > 0:
+		visible = true
+		bind_data(items[0])
+				# 动画效果 (可选)：从右侧滑入
+		# var tween = create_tween()
+	else:
+		visible = false # 没选中就隐藏
+
+func _on_view_changed(new_region: RegionData):
+	# 当切换地图层级时，默认显示当前地图本身的属性
+	# 或者选择隐藏面板，等待用户点击
+	bind_data(new_region)
+	visible = true
+
 
 # --- 内部逻辑 ---
 
@@ -97,12 +102,9 @@ func _on_lang_changed(index: int):
 		TranslationServer.set_locale("en")
 	else:
 		TranslationServer.set_locale("zh")
-	
-	# 关键：切换语言后，已经显示的 UI 不会自动刷新（Godot 特性）
-	# 我们需要手动刷新那些用代码生成的文本（如 Type 下拉框）
-	# 对于静态 Text 属性绑定的 KEY，Godot 会自动刷新（Godot 4 改进）
-	_refresh_dynamic_text()
-	language_changed.emit()
+	_refresh_dynamic_text() # 刷新 EditorPanel 自己的 Type 下拉框
+	# ✅ 修改：通过总线通知全世界 (LensBar 会收到)
+	SignalBus.locale_changed.emit()
 
 func _refresh_dynamic_text():
 	# 重新填充 Type 下拉框

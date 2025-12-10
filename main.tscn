@@ -1,24 +1,39 @@
-[gd_scene load_steps=7 format=3 uid="uid://cfqlpubgvlkf8"]
+[gd_scene load_steps=6 format=3 uid="uid://cfqlpubgvlkf8"]
 
 [ext_resource type="Script" uid="uid://dd13yvwv2wbb8" path="res://main.gd" id="1_0xm2m"]
 [ext_resource type="PackedScene" uid="uid://b2otoir310ikp" path="res://view/hex_map_viewer.tscn" id="2_h2yge"]
-[ext_resource type="PackedScene" uid="uid://dvwh354vtuk3t" path="res://ui/map_ui.tscn" id="3_1bvp3"]
 [ext_resource type="Script" uid="uid://dqpbdtmm5bv7i" path="res://core/view_stack_controller.gd" id="4_lquwl"]
-[ext_resource type="PackedScene" uid="uid://ce8xollot8dd2" path="res://ui/editor_panel.tscn" id="5_lquwl"]
 [ext_resource type="PackedScene" uid="uid://b4r6j7mavy5y0" path="res://ui/save_load_menu.tscn" id="6_7mycd"]
+[ext_resource type="PackedScene" uid="uid://c7nea6xc0h8yr" path="res://view/ui/game_hud.tscn" id="6_272bh"]
 
 [node name="main" type="Node2D"]
 script = ExtResource("1_0xm2m")
 
 [node name="HexMapViewer" parent="." instance=ExtResource("2_h2yge")]
 
-[node name="MapUI" parent="." instance=ExtResource("3_1bvp3")]
-
-[node name="ViewStackController" type="Node" parent="." node_paths=PackedStringArray("map_viewer", "map_ui")]
+[node name="ViewStackController" type="Node" parent="." node_paths=PackedStringArray("map_viewer")]
 script = ExtResource("4_lquwl")
 map_viewer = NodePath("../HexMapViewer")
-map_ui = NodePath("../MapUI")
-
-[node name="EditorPanel" parent="." instance=ExtResource("5_lquwl")]
 
 [node name="SaveLoadMenu" parent="." instance=ExtResource("6_7mycd")]
+
+[node name="GameHUD" parent="." instance=ExtResource("6_272bh")]
+
+[node name="MoveDialog" type="ConfirmationDialog" parent="."]
+oversampling_override = 1.0
+title = "WIN_TITLE_MOVE"
+initial_position = 2
+size = Vector2i(300, 112)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MoveDialog"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 292.0
+offset_bottom = 59.0
+
+[node name="Label" type="Label" parent="MoveDialog/VBoxContainer"]
+layout_mode = 2
+text = "UI_LABEL_MOVE_TARGET"
+
+[node name="MoveOption" type="OptionButton" parent="MoveDialog/VBoxContainer"]
+layout_mode = 2

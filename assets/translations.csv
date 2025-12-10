@@ -1,7 +1,8 @@
-﻿keys,en,zh
+keys,en,zh
 UI_LABEL_COLOR,Map Color:,地图颜色:
 UI_LABEL_DESC,Description:,简介/设定:
 UI_LABEL_FILENAME,File Name:,文件名称:
+UI_LABEL_MOVE_TARGET,Move selected hexes to:,将选中区域划拨给：
 UI_LABEL_NAME,Name:,名称:
 UI_LABEL_LANG,Language:,语言:
 UI_LABEL_TYPE,Type:,类型:
@@ -11,13 +12,14 @@ UI_BTN_CREATE,Create Region,新建区域
 UI_BTN_DELETE,Delete,删除 
 UI_BTN_GEN,Gen,生成
 UI_BTN_LOAD,Load Game,读取存档 
-UI_BTN_MOVETO,Move to...,划拨给...
+UI_BTN_MOVETO,Move To,划拨
 UI_BTN_PAINT,Paint,绘制
 UI_BTN_RIVER,River,河流
 UI_BTN_SAVE,Save,保存
 UI_BTN_SELECT,Select,选择
 UI_BTN_SYSTEM,System,系统菜单
 UI_TITLE_EDITOR,REGION INSPECTOR,区域属性编辑器
+UI_TITLE_OUTLINER,OUTLINER,大纲
 TYPE_CITY,City,城市
 TYPE_CONTINENT,Continent,大陆
 TYPE_HEXCELL,HexCell,六边格

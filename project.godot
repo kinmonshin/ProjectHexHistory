@@ -18,6 +18,11 @@ config/icon="res://icon.svg"
 [autoload]
 
 SessionManager="*res://core/session_manager.gd"
+SignalBus="*res://core/signal_bus.gd"
+
+[gui]
+
+theme/custom="uid://chxgkda6ftdgb"
 
 [input]
 

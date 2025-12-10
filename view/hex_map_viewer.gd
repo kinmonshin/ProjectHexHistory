@@ -118,7 +118,12 @@ func _ready():
 	
 	if SessionManager.current_world:
 		_on_world_loaded(SessionManager.current_world)
-
+		
+	# ✅ 注册监听 (不管 UI 在哪，只要有人发信号，我就执行)
+	SignalBus.view_mode_changed.connect(set_view_mode)
+	SignalBus.tool_changed.connect(set_tool)
+	SignalBus.river_mode_toggled.connect(set_river_mode)
+	SignalBus.paint_terrain_selected.connect(set_paint_terrain)
 
 # 根据 TileSet 尺寸计算六边形的 6 个顶点
 func _get_hex_vertices(center: Vector2) -> PackedVector2Array:
@@ -151,8 +156,6 @@ func _get_hex_vertices(center: Vector2) -> PackedVector2Array:
 func set_tool(tool_name: String):
 	current_tool = tool_name
 	print("地图模式切换为: ", current_tool)
-
-# res://view/hex_map_viewer.gd
 
 func _unhandled_input(event: InputEvent):
 	

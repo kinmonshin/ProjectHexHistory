@@ -3,83 +3,69 @@
 [ext_resource type="Script" uid="uid://dejlh05fxr2xh" path="res://ui/editor_panel.gd" id="1_r2umv"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_3wd24"]
-font_size = 22
+font_size = 20
+font_color = Color(0, 0.65882355, 1, 1)
+outline_size = 2
 
-[node name="EditorPanel" type="CanvasLayer"]
+[node name="EditorPanel" type="PanelContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_r2umv")
 
 [node name="PanelContainer" type="PanelContainer" parent="."]
 custom_minimum_size = Vector2(300, 0)
-anchors_preset = 11
-anchor_left = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -209.0
-offset_top = 60.0
-grow_horizontal = 0
-grow_vertical = 2
+layout_mode = 2
 size_flags_vertical = 3
 
-[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="PanelContainer"]
 layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
 
-[node name="Label" type="Label" parent="PanelContainer/VBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "UI_TITLE_EDITOR"
 label_settings = SubResource("LabelSettings_3wd24")
 
-[node name="HSeparator" type="HSeparator" parent="PanelContainer/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="Label2" type="Label" parent="PanelContainer/VBoxContainer"]
+[node name="Label2" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "UI_LABEL_NAME"
 
-[node name="InputName" type="LineEdit" parent="PanelContainer/VBoxContainer"]
+[node name="InputName" type="LineEdit" parent="PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="Label3" type="Label" parent="PanelContainer/VBoxContainer"]
+[node name="Label3" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "UI_LABEL_TYPE"
 
-[node name="OptionType" type="OptionButton" parent="PanelContainer/VBoxContainer"]
+[node name="OptionType" type="OptionButton" parent="PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="Label5" type="Label" parent="PanelContainer/VBoxContainer"]
+[node name="Label5" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "UI_LABEL_COLOR"
 
-[node name="BtnColorPick" type="ColorPickerButton" parent="PanelContainer/VBoxContainer"]
+[node name="BtnColorPick" type="ColorPickerButton" parent="PanelContainer/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 
-[node name="Label4" type="Label" parent="PanelContainer/VBoxContainer"]
+[node name="Label4" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "UI_LABEL_DESC"
 
-[node name="InputDesc" type="TextEdit" parent="PanelContainer/VBoxContainer"]
+[node name="InputDesc" type="TextEdit" parent="PanelContainer/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
 wrap_mode = 1
-
-[node name="HSeparator2" type="HSeparator" parent="PanelContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="PanelContainer/VBoxContainer/HBoxContainer"]
-layout_mode = 2
-text = "UI_LABEL_LANG"
-
-[node name="BtnLang" type="OptionButton" parent="PanelContainer/VBoxContainer/HBoxContainer"]
-layout_mode = 2
-item_count = 2
-popup/item_0/text = "English"
-popup/item_0/id = 0
-popup/item_1/text = "中文"
-popup/item_1/id = 1
-
-[node name="BtnSystem" type="Button" parent="PanelContainer/VBoxContainer"]
-layout_mode = 2
-text = "UI_BTN_SYSTEM"

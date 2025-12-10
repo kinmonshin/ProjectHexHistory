@@ -3,11 +3,11 @@ extends Node2D
 
 const SAVE_PATH = "user://my_hex_world.tres"
 
-@onready var editor_panel = $EditorPanel
 @onready var view_controller = $ViewStackController
-@onready var map_ui = $MapUI # 确保节点路径正确
 @onready var map_viewer = $HexMapViewer # 需要能访问到 map_viewer
 @onready var save_menu = $SaveLoadMenu
+@onready var move_dialog = $MoveDialog
+@onready var move_option = $MoveDialog/VBoxContainer/MoveOption
 
 func _ready():
 	# 1. World
@@ -43,44 +43,25 @@ func _ready():
 	
 		# --- 新增连接逻辑 ---
 	# 1. 连接编辑器
-	view_controller.view_changed.connect(editor_panel.bind_data)
-	
-	# 2. 连接工具栏 (UI -> Viewer)
-	# 当 UI 切换工具时，告诉 Viewer 改变模式
-	map_ui.tool_changed.connect(map_viewer.set_tool)
-	
 	# 启动！
 	SessionManager.current_world = world
 	SessionManager.world_loaded.emit(world)
+
+	# 3. ✅ 修改生成器连线
+	# 以前：map_ui.generate_requested.connect(_on_generate_requested)
+	# 现在：监听总线
+	SignalBus.request_generate_map.connect(_on_generate_requested)
+	# 4. ✅ 修改系统菜单连线 (如果在 TopBar 也有入口的话)
+	SignalBus.request_system_menu.connect(save_menu.open_menu)
 	
-	# --- 新增连接 ---
-		# 1. 当地图选中项变化 -> 更新 UI 按钮
-	map_viewer.selection_changed.connect(func(count): 
-		map_ui.update_create_button(count > 0)
-	)
-		# 2. 当点击“创建区域” -> 执行数据操作
-	map_ui.create_region_requested.connect(_on_create_region)
+	# 重新连接新建区域请求
+	SignalBus.request_create_region.connect(_on_create_region)
 	
-	# 连接编辑器的修改信号 -> 触发地图重绘
-	editor_panel.data_modified.connect(func(): map_viewer.queue_redraw())
-	
-	editor_panel.language_changed.connect(map_ui.refresh_locale)
-	
-	# --- 连接系统菜单 ---
-	# 当 EditorPanel 发出请求时 -> 打开 save_menu
-	editor_panel.system_menu_requested.connect(save_menu.open_menu)
-	
-	# 连接 UI 地形选择 -> Viewer
-	map_ui.terrain_selected.connect(map_viewer.set_paint_terrain)
-	
-	map_ui.view_mode_changed.connect(map_viewer.set_view_mode)
-	
-	# 连接生成按钮	
-	map_ui.generate_requested.connect(_on_generate_requested)
-	
-	# 连接河流模式开关
-	map_ui.river_mode_toggled.connect(map_viewer.set_river_mode)
-	
+	# 1. 监听来自 LensBar 的请求
+	SignalBus.request_move_dialog.connect(_prepare_move_dialog)
+	# 2. 监听弹窗确认
+	move_dialog.confirmed.connect(_on_move_dialog_confirmed)
+
 	# 1. 尝试加载存档
 	if FileAccess.file_exists(SAVE_PATH):
 		print("发现存档，正在加载...")
@@ -88,53 +69,62 @@ func _ready():
 	else:
 		print("未发现存档，初始化新世界...")
 		_init_new_world()
-	
-	# --- 新增连接 MapUI ---
-	# 1. 点击 "Move to" 按钮时，准备数据
-	map_ui.btn_move_to.pressed.connect(_prepare_move_dialog)
-	
-	# 2. 确认移动
-	map_ui.move_to_requested.connect(_on_move_to_confirmed)
 
+# 准备并弹出窗口
 func _prepare_move_dialog():
-	var current_region = view_controller.stack.back()
-	var names: Array[String] = []
-	
-	# 获取所有子区域的名字
-	for child in current_region.children:
-		names.append(child.name)
-	
-	# 传给 UI
-	map_ui.setup_move_options(names)
-	map_ui.move_dialog.popup_centered() # 并在 Main 里触发弹窗
+	# 检查是否选中了格子
+	var selected = map_viewer.get_selected_cells()
+	if selected.is_empty():
+		print("未选中任何格子") # 以后可以用 Toast 提示
+		return
 
+	# 检查是否有子区域
+	var current_region = view_controller.stack.back()
+	if current_region.children.is_empty():
+		print("没有可移动的目标区域")
+		return
+
+	# 填充下拉框
+	move_option.clear()
+	for i in range(current_region.children.size()):
+		var child = current_region.children[i]
+		move_option.add_item(child.name, i) # ID 对应索引
+	
+	# 弹出窗口
+	move_dialog.popup_centered()
+
+# UI 响应：用户点了确定
+func _on_move_dialog_confirmed():
+	# 获取用户选了第几个
+	var index = move_option.selected
+	if index == -1: return
+	
+	# 调用核心逻辑
+	_on_move_to_confirmed(index)
+
+# 核心逻辑：执行数据移动
 func _on_move_to_confirmed(child_index: int):
 	var current_region = view_controller.stack.back()
-	
-	# 获取目标子区域
-	if child_index < 0 or child_index >= current_region.children.size():
-		return
 	var target_region = current_region.children[child_index]
-	
-	# 获取选中的格子
 	var selected_coords = map_viewer.get_selected_cells()
 	
-	print("正在移动 %d 个格子到 %s..." % [selected_coords.size(), target_region.name])
+	print("Moving %d hexes to %s" % [selected_coords.size(), target_region.name])
 	
-	# 执行数据迁移 (和 Create Region 类似，但不用 new region)
+	# 1. 数据迁移
 	for coord in selected_coords:
-		var original_cell = current_region.get_hex(coord.x, coord.y)
-		if original_cell:
-			current_region.remove_hex(coord.x, coord.y) # 从当前层移除
-			target_region.hex_cells.append(original_cell) # 加入目标层
+		# 使用之前加的 get_hex 辅助函数
+		var cell = current_region.get_hex(coord.x, coord.y)
+		if cell:
+			current_region.remove_hex(coord.x, coord.y) # 从当前层拿走
+			target_region.hex_cells.append(cell)        # 给目标层
 	
-	# 收尾
+	# 2. 刷新视图
 	map_viewer.clear_selection()
-	map_viewer._refresh_tiles() # 记得刷新！
-	map_viewer.queue_redraw()
+	map_viewer._refresh_tiles() # 刷新贴图
+	map_viewer.queue_redraw()   # 刷新线框
 	
-	# 提示
-	print("移动完成")
+	# 3. 通知其他 UI (比如大纲) 数据变了
+	SignalBus.map_data_modified.emit()
 
 # 把之前的测试数据生成逻辑封装到这里
 func _init_new_world():
@@ -223,9 +213,14 @@ func _on_create_region():
 	map_viewer.clear_selection()
 	map_viewer.region_modified.emit() # 通知重绘
 	
+	# 🔴 关键修复：添加这行！通知 Outliner 刷新树
+	SignalBus.map_data_modified.emit() 
+	
 	# 5. 自动进入新区域编辑 (可选)
 	# view_controller._push_view(new_region) # 这一步需要把 _push_view 公开，或者不跳转
 
+	print("新建区域完成: ", new_region.name)
+	
 # 辅助：获取下一级类型
 func _get_next_type(current: RegionData.Type) -> RegionData.Type:
 	match current:

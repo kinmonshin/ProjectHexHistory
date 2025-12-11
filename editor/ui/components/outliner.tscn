@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bl8boov01wij0"]
 
-[ext_resource type="Script" uid="uid://dqoftljoeohge" path="res://ui/components/outliner.gd" id="1_nmwud"]
+[ext_resource type="Script" uid="uid://dqoftljoeohge" path="res://editor/ui/components/outliner.gd" id="1_nmwud"]
 
 [node name="Outliner" type="PanelContainer"]
 offset_right = 40.0

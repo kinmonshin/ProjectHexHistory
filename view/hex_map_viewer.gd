@@ -59,7 +59,7 @@ var terrain_atlas_map = {
 }
 
 # --- 将 Axial(q, r) 转换为 Godot TileMap 坐标 ---
-func _axial_to_tilemap(q: int, r: int) -> Vector2i:
+func axial_to_tilemap(q: int, r: int) -> Vector2i:
 	var col = q + (r - (r & 1)) / 2
 	var row = r
 	return Vector2i(col, row)
@@ -78,7 +78,7 @@ func _set_tiles_recursive(region: RegionData):
 		for cell in region.hex_cells:
 			if terrain_atlas_map.has(cell.terrain):
 				var atlas_coord = terrain_atlas_map[cell.terrain]
-				var tile_pos = _axial_to_tilemap(cell.q, cell.r)
+				var tile_pos = axial_to_tilemap(cell.q, cell.r)
 				terrain_layer.set_cell(tile_pos, terrain_source_id, atlas_coord)
 	
 	for child in region.children:
@@ -394,8 +394,8 @@ func _try_erase_hex(coord: Vector2i):
 		queue_redraw()
 
 # 获取某个 HexCell 在屏幕上的绝对中心点 (基于 TileMapLayer)
-func _get_cell_center(q: int, r: int) -> Vector2:
-	var tile_pos = _axial_to_tilemap(q, r)
+func get_cell_center(q: int, r: int) -> Vector2:
+	var tile_pos = axial_to_tilemap(q, r)
 	if terrain_layer:
 		# map_to_local 返回的是相对 TerrainLayer 的坐标
 		# 加上 terrain_layer.position 转换为相对于 HexMapViewer 的坐标
@@ -465,7 +465,7 @@ func _draw():
 	# 2. 多选高亮 (恢复)
 	if not selected_cells.is_empty():
 		for coord in selected_cells:
-			var center = _get_cell_center(coord.x, coord.y)
+			var center = get_cell_center(coord.x, coord.y)
 			var points = _get_hex_vertices(center)
 			
 			# 绘制半透明青色填充
@@ -494,7 +494,7 @@ func _draw():
 			highlight_color = Color(1.0, 1.0, 1.0, 0.4) 
 			line_width = 2.0
 		
-		var center = _get_cell_center(hovered_coord.x, hovered_coord.y)
+		var center = get_cell_center(hovered_coord.x, hovered_coord.y)
 		var points = _get_hex_vertices(center)
 		
 		if do_fill:
@@ -514,7 +514,7 @@ func _draw():
 		var all_cells = current_region.get_all_hexes_recursive()
 		
 		for cell in all_cells:
-			var center = _get_cell_center(cell.q, cell.r)
+			var center = get_cell_center(cell.q, cell.r)
 			var text = "%d,%d" % [cell.q, cell.r]
 			
 			var text_size = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
@@ -565,7 +565,7 @@ func _draw_physical_overlay_recursive(region: RegionData):
 # 仅绘制六边形边框 (无填充)
 func _draw_hex_grid_only(q: int, r: int):
 	# 1. 获取绝对中心 (Single Source of Truth)
-	var center = _get_cell_center(q, r)
+	var center = get_cell_center(q, r)
 	
 	# 2. 获取匹配 TileSet 形状的顶点 (New Geometry)
 	var points = _get_hex_vertices(center)
@@ -621,7 +621,7 @@ func _draw_region_recursive(region: RegionData):
 
 # 新增：绘制河流
 func _draw_river(cell: HexCell):
-	var start_pos = _get_cell_center(cell.q, cell.r)
+	var start_pos = get_cell_center(cell.q, cell.r)
 	
 	# --- 修复 1: 绘制源头圆点 (解决源头不可见问题) ---
 	# 只有当它是源头时才画
@@ -633,13 +633,13 @@ func _draw_river(cell: HexCell):
 	# 只有当流向是有效的 (0~5) 时，才计算邻居并画线
 	if cell.river_direction >= 0 and cell.river_direction < 6:
 		var neighbor_coord = HexMath.get_neighbor(cell, cell.river_direction)
-		var end_pos = _get_cell_center(neighbor_coord.x, neighbor_coord.y)
+		var end_pos = get_cell_center(neighbor_coord.x, neighbor_coord.y)
 		
 		# 绘制河道
 		draw_line(start_pos, end_pos, Color(0.2, 0.4, 1.0), 4.0)
 
 func _draw_hex_at(q: int, r: int, inner_color: Color, border_color: Color, width: float = 1.0):
-	var center = _get_cell_center(q, r)
+	var center = get_cell_center(q, r)
 	var points = _get_hex_vertices(center)
 	
 	draw_colored_polygon(points, inner_color)

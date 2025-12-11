@@ -1,0 +1,58 @@
+[gd_scene load_steps=3 format=3 uid="uid://4rff6e3ohli8"]
+
+[ext_resource type="Script" uid="uid://chqhwxisg2qvg" path="res://game/ui/result_window.gd" id="1_rq1qy"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_rq1qy"]
+font_size = 32
+font_color = Color(1, 0, 0, 1)
+
+[node name="ResultWindow" type="CanvasLayer"]
+layer = 101
+script = ExtResource("1_rq1qy")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.78431374)
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="PanelContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer"]
+layout_mode = 2
+
+[node name="LblTitle" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "YOU SURVIVED"
+label_settings = SubResource("LabelSettings_rq1qy")
+
+[node name="LblMessage" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "EVT_VICTORY_DESC"
+
+[node name="HSeparator" type="HSeparator" parent="PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="BtnRestart" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "GAME_UI_RESTART"
+
+[node name="BtnQuit" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "GAME_UI_QUIT"

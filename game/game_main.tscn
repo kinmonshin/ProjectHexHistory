@@ -1,0 +1,77 @@
+[gd_scene load_steps=10 format=3 uid="uid://cm75oniq8nmco"]
+
+[ext_resource type="Script" uid="uid://4p64mirniig4" path="res://game/game_main.gd" id="1_6lc1f"]
+[ext_resource type="PackedScene" uid="uid://b2otoir310ikp" path="res://view/hex_map_viewer.tscn" id="2_b7flu"]
+[ext_resource type="TileSet" uid="uid://5d1a7nnmjqw8" path="res://game/fog_tileset.tres" id="2_msxjj"]
+[ext_resource type="Theme" uid="uid://chxgkda6ftdgb" path="res://assets/theme/commander_theme.tres" id="4_msxjj"]
+[ext_resource type="PackedScene" uid="uid://d2irhs80ktyb2" path="res://game/ui/event_window.tscn" id="5_w0466"]
+[ext_resource type="PackedScene" uid="uid://4rff6e3ohli8" path="res://game/ui/result_window.tscn" id="6_0mnoj"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_b7flu"]
+font_size = 24
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_msxjj"]
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_w0466"]
+bg_color = Color(0.76828635, 0.5502503, 0.30295736, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[node name="GameMain" type="Node2D"]
+script = ExtResource("1_6lc1f")
+
+[node name="HexMapViewer" parent="." instance=ExtResource("2_b7flu")]
+
+[node name="FogLayer" type="TileMapLayer" parent="."]
+modulate = Color(0.13319641, 0.13319641, 0.13319638, 0.8)
+z_index = 10
+tile_set = ExtResource("2_msxjj")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="StatusBar" type="PanelContainer" parent="HUD"]
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 180.0
+offset_bottom = 56.0
+theme = ExtResource("4_msxjj")
+
+[node name="MarginContainer" type="MarginContainer" parent="HUD/StatusBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HUD/StatusBar/MarginContainer"]
+layout_mode = 2
+
+[node name="Icon" type="Label" parent="HUD/StatusBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "⚡"
+label_settings = SubResource("LabelSettings_b7flu")
+horizontal_alignment = 1
+
+[node name="ProgressBar" type="ProgressBar" parent="HUD/StatusBar/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_styles/background = SubResource("StyleBoxFlat_msxjj")
+theme_override_styles/fill = SubResource("StyleBoxFlat_w0466")
+value = 100.0
+
+[node name="LabelValue" type="Label" parent="HUD/StatusBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "10/10"
+label_settings = SubResource("LabelSettings_b7flu")
+horizontal_alignment = 1
+
+[node name="EventWindow" parent="HUD" instance=ExtResource("5_w0466")]
+
+[node name="ResultWindow" parent="." instance=ExtResource("6_0mnoj")]

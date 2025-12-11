@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="GameEvent" load_steps=2 format=3 uid="uid://bvyv70qnwiuvl"]
+
+[ext_resource type="Script" uid="uid://00vb77flhgjx" path="res://core/data/game_event.gd" id="1_fgpro"]
+
+[resource]
+script = ExtResource("1_fgpro")
+title = "古老废墟"
+description = "你在迷雾中发现了一座坍塌的石塔，缝隙中似乎闪烁着微光。"
+option_a_text = "搜寻废墟"
+option_a_cost_ap = 2
+option_b_text = "离开"
+metadata/_custom_type_script = "uid://00vb77flhgjx"

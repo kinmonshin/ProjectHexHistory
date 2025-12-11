@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://bjvsxgap0ouq3"]
+
+[ext_resource type="Script" uid="uid://b82lctynexchp" path="res://game/player.gd" id="1_w5y0b"]
+[ext_resource type="Texture2D" uid="uid://c7t8tq2s2agtv" path="res://assets/tiles/kare01.png" id="2_du4nq"]
+
+[node name="Player" type="Node2D"]
+script = ExtResource("1_w5y0b")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_du4nq")
+offset = Vector2(0, -8)
+hframes = 6
+
+[node name="Camera2D" type="Camera2D" parent="."]

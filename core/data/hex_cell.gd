@@ -27,6 +27,13 @@ enum TerrainType {
 @export var river_direction: int = -1 # 0-5 代表流向邻居的索引
 @export var is_river_source: bool = false
 
+# --- 新增：探索状态 ---
+@export var is_explored: bool = false
+@export var is_visible: bool = false # 可选：用于视野计算
+
+# 新增字段
+@export var linked_event: GameEvent # 直接引用资源
+
 # --- 辅助方法 ---
 
 # 获取 s 坐标 (计算属性)

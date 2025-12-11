@@ -1,9 +1,9 @@
 [gd_scene load_steps=5 format=3 uid="uid://c7nea6xc0h8yr"]
 
-[ext_resource type="PackedScene" uid="uid://cko8bh3w6e7dp" path="res://ui/components/top_bar.tscn" id="1_2iti3"]
-[ext_resource type="PackedScene" uid="uid://cu1de8o1smysn" path="res://ui/components/lens_bar.tscn" id="2_5mxp6"]
-[ext_resource type="PackedScene" uid="uid://bl8boov01wij0" path="res://ui/components/outliner.tscn" id="3_5mxp6"]
-[ext_resource type="PackedScene" uid="uid://ce8xollot8dd2" path="res://ui/editor_panel.tscn" id="4_rl7k5"]
+[ext_resource type="PackedScene" uid="uid://cko8bh3w6e7dp" path="res://editor/ui/components/top_bar.tscn" id="1_2iti3"]
+[ext_resource type="PackedScene" uid="uid://cu1de8o1smysn" path="res://editor/ui/components/lens_bar.tscn" id="2_5mxp6"]
+[ext_resource type="PackedScene" uid="uid://bl8boov01wij0" path="res://editor/ui/components/outliner.tscn" id="3_5mxp6"]
+[ext_resource type="PackedScene" uid="uid://ce8xollot8dd2" path="res://editor/ui/editor_panel.tscn" id="4_rl7k5"]
 
 [node name="GameHUD" type="CanvasLayer"]
 

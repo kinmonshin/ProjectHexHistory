@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://cu1de8o1smysn"]
 
-[ext_resource type="Script" uid="uid://5hnewjut1t8s" path="res://ui/components/lens_bar.gd" id="1_k88fx"]
+[ext_resource type="Script" uid="uid://5hnewjut1t8s" path="res://editor/ui/components/lens_bar.gd" id="1_k88fx"]
 
 [sub_resource type="ButtonGroup" id="ButtonGroup_k88fx"]
 

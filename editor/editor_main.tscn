@@ -1,0 +1,39 @@
+[gd_scene load_steps=6 format=3 uid="uid://cfqlpubgvlkf8"]
+
+[ext_resource type="Script" uid="uid://dd13yvwv2wbb8" path="res://editor/main.gd" id="1_geci5"]
+[ext_resource type="PackedScene" uid="uid://b2otoir310ikp" path="res://view/hex_map_viewer.tscn" id="2_e4mfx"]
+[ext_resource type="Script" uid="uid://dqpbdtmm5bv7i" path="res://core/view_stack_controller.gd" id="3_fw0ba"]
+[ext_resource type="PackedScene" uid="uid://b4r6j7mavy5y0" path="res://editor/ui/save_load_menu.tscn" id="4_nw5jm"]
+[ext_resource type="PackedScene" uid="uid://c7nea6xc0h8yr" path="res://editor/ui/game_hud.tscn" id="5_dt2to"]
+
+[node name="main" type="Node2D"]
+script = ExtResource("1_geci5")
+
+[node name="HexMapViewer" parent="." instance=ExtResource("2_e4mfx")]
+
+[node name="ViewStackController" type="Node" parent="." node_paths=PackedStringArray("map_viewer")]
+script = ExtResource("3_fw0ba")
+map_viewer = NodePath("../HexMapViewer")
+
+[node name="SaveLoadMenu" parent="." instance=ExtResource("4_nw5jm")]
+
+[node name="GameHUD" parent="." instance=ExtResource("5_dt2to")]
+
+[node name="MoveDialog" type="ConfirmationDialog" parent="."]
+oversampling_override = 1.0
+title = "WIN_TITLE_MOVE"
+initial_position = 2
+size = Vector2i(300, 112)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MoveDialog"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 292.0
+offset_bottom = 59.0
+
+[node name="Label" type="Label" parent="MoveDialog/VBoxContainer"]
+layout_mode = 2
+text = "UI_LABEL_MOVE_TARGET"
+
+[node name="MoveOption" type="OptionButton" parent="MoveDialog/VBoxContainer"]
+layout_mode = 2

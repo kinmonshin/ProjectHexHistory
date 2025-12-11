@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="六边格世界编辑器"
-run/main_scene="uid://cfqlpubgvlkf8"
+run/main_scene="uid://cm75oniq8nmco"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -44,3 +44,9 @@ locale/translation_remaps={
 "res://assets/translations.zh.translation": PackedStringArray()
 }
 locale/translations=PackedStringArray("res://assets/translations.en.translation", "res://assets/translations.zh.translation")
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
+2d/snap/snap_2d_transforms_to_pixel=true
+2d/snap/snap_2d_vertices_to_pixel=true

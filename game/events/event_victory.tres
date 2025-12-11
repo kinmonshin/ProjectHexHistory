@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="GameEvent" load_steps=2 format=3 uid="uid://cq8n0pr5gppiy"]
+
+[ext_resource type="Script" uid="uid://00vb77flhgjx" path="res://core/data/game_event.gd" id="1_bmb7b"]
+
+[resource]
+script = ExtResource("1_bmb7b")
+event_type = 1
+title = "避难所"
+description = "恭喜！你看见了人类的灯火……"
+option_a_text = "结束旅程"
+metadata/_custom_type_script = "uid://00vb77flhgjx"

@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://cko8bh3w6e7dp"]
 
-[ext_resource type="Script" uid="uid://c13ifeoujy0h0" path="res://ui/components/top_bar.gd" id="1_ur1qq"]
+[ext_resource type="Script" uid="uid://c13ifeoujy0h0" path="res://editor/ui/components/top_bar.gd" id="1_ur1qq"]
 
 [node name="TopBar" type="PanelContainer"]
 script = ExtResource("1_ur1qq")

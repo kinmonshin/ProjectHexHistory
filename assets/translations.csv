@@ -40,3 +40,19 @@ VIEW_RELIGIOUS,Religious View,宗教视图
 MSG_CONFIRM_DELETE,Are you sure to delete this save?,确定要删除此存档吗？
 MSG_OVERWRITE,Overwrite existing save file?,检测到同名文件，是否覆盖？
 WIN_TITLE_MOVE,Select Target Region,选择目标区域
+
+
+--- UI ---
+GAME_UI_RESTART, Restart Journey, 重新开始
+GAME_UI_QUIT, Abandon, 放弃旅途
+GAME_UI_VICTORY, Victory, 生存
+GAME_UI_DEFEAT, Defeat, 死亡
+--- Stats ---
+GAME_STAT_SUPPLIES, Supplies: %s, 补给: %s
+GAME_STAT_HP, HP: %s, 生命: %s
+GAME_MSG_NO_SUPPLIES, Out of supplies!, 补给耗尽！
+GAME_MSG_BLOCKED, The path is blocked., 前方道路不通。
+--- Events ---
+EVT_VICTORY_TITLE, The Lighthouse, 灯塔
+EVT_VICTORY_DESC, You see the light..., 你看到了光...
+

@@ -5,68 +5,61 @@ extends RefCounted
 const FREQUENCY = 0.08  
 const OCTAVES = 4       
 
-static func generate_island(target: RegionData, radius: int, map_seed: int):
-	print("正在生成地图... 种子: ", map_seed)
-	
-	var noise = FastNoiseLite.new()
-	noise.seed = map_seed
-	noise.noise_type = FastNoiseLite.TYPE_PERLIN
-	noise.frequency = FREQUENCY
-	noise.fractal_octaves = OCTAVES
-	
+# 生成矩形地图 (新)
+# width, height: 地图的宽高 (例如 20x20)
+static func generate_rectangular_map(target: RegionData, width: int, height: int, seed_val: int):
+	print("正在生成矩形地图... 种子: ", seed_val)
 	target.hex_cells.clear()
 	
-	# 为了计算归一化距离，我们需要知道这一圈格子的最大物理半径
-	# 在六边形网格中，当 r = radius 时，y 轴距离最大
-	# max_phys_radius ≈ 1.5 * radius (假设六边形 size=1)
-	var max_dist_phys = 1.5 * radius
+	var noise = FastNoiseLite.new()
+	noise.seed = seed_val
+	noise.frequency = 0.08 # 频率越低，地形越平缓
 	
-	for q in range(-radius, radius + 1):
-		for r in range(-radius, radius + 1):
-			if abs(-q-r) <= radius:
-				
-				# 1. 噪声采样
-				var noise_val = noise.get_noise_2d(q * 10, r * 10)
-				
-				# 2. 坐标转换 (Hex -> Pixel)
-				# 这一步是为了消除六边形坐标系的拉伸畸变
-				# x = sqrt(3) * q + sqrt(3)/2 * r
-				# y = 3/2 * r
-				var real_x = 1.732 * q + 0.866 * r
-				var real_y = 1.5 * r
-				
-				# 计算当前点到中心(0,0)的物理距离
-				var current_dist_phys = sqrt(real_x * real_x + real_y * real_y)
-				
-				# 归一化 (0.0 在中心, 1.0 在边缘)
-				var dist_ratio = current_dist_phys / max_dist_phys
-				
-				# 3. 应用遮罩
-				# 公式：Height = Noise - (Distance ^ a) * b
-				# a 控制边缘下降的曲线陡峭度 (2.0 是抛物线，比较自然)
-				# b 控制下降的力度 (越大，边缘越容易变成海)
-				var height = noise_val - (pow(dist_ratio, 2.0) * 1.8) + 0.4
-				
-				# 4. 地形判定 (阈值微调)
-				var terrain_type = HexCell.TerrainType.OCEAN
-				
-				if height < -0.2:
-					terrain_type = HexCell.TerrainType.OCEAN
-				elif height < 0.05: # 稍微提高一点海岸线
-					terrain_type = HexCell.TerrainType.COAST
-				elif height < 0.4:
-					terrain_type = HexCell.TerrainType.PLAINS
-				elif height < 0.6:
-					terrain_type = HexCell.TerrainType.FOREST
-				elif height < 0.8:
-					terrain_type = HexCell.TerrainType.HILLS
-				else:
-					terrain_type = HexCell.TerrainType.MOUNTAIN
-				
-				var cell = HexCell.new()
-				cell.q = q
-				cell.r = r
-				cell.terrain = terrain_type
-				cell.elevation = (height + 1.0) * 50.0 
-				
-				target.hex_cells.append(cell)
+	# 偏移量：让 (0,0) 处于地图中心，方便摄像机对齐
+	var offset_x = -width / 2
+	var offset_y = -height / 2
+	
+	for y in range(height):
+		for x in range(width):
+			# --- 核心：矩形转六边形坐标 (Odd-r 转换) ---
+			# 这是为了让生成的地图在屏幕上看起来是方方正正的矩形
+			var q = (x + offset_x) - ((y + offset_y) - ((y + offset_y) & 1)) / 2
+			var r = (y + offset_y)
+			
+			# --- 边界处理 (The Abyss) ---
+			# 如果是地图的最外圈 (边缘 1-2 格)，强制设为海洋/深渊
+			# 这样玩家就永远走不出地图了
+			if x <= 1 or x >= width - 2 or y <= 1 or y >= height - 2:
+				_add_cell(target, q, r, HexCell.TerrainType.OCEAN)
+				continue
+			
+			# --- 地形生成 ---
+			var noise_val = noise.get_noise_2d(q * 10, r * 10)
+			
+			# 根据噪声值决定地形
+			var terrain_type = HexCell.TerrainType.OCEAN
+			if noise_val < -0.2:
+				terrain_type = HexCell.TerrainType.OCEAN
+			elif noise_val < 0.2:
+				terrain_type = HexCell.TerrainType.PLAINS
+			elif noise_val < 0.5:
+				terrain_type = HexCell.TerrainType.FOREST
+			else:
+				terrain_type = HexCell.TerrainType.MOUNTAIN
+			
+			_add_cell(target, q, r, terrain_type)
+
+# 辅助函数 (保持不变或添加)
+static func _add_cell(target: RegionData, q: int, r: int, type: int):
+	var cell = HexCell.new()
+	cell.q = q
+	cell.r = r
+	cell.terrain = type
+	target.hex_cells.append(cell)
+
+# ➕ 新增：兼容旧编辑器的接口
+# 编辑器还在调用这个名字，我们把它指向新的矩形生成逻辑，或者恢复旧逻辑
+static func generate_island(target: RegionData, radius: int, seed_val: int):
+	# 这里我们简单地转接给新的矩形生成器
+	# 把半径 x2 变成宽高
+	generate_rectangular_map(target, radius * 2, radius * 2, seed_val)

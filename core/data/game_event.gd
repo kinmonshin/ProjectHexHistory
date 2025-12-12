@@ -12,12 +12,14 @@ enum Type { NORMAL, VICTORY, INSTANT_DEATH }
 
 # 选项 A
 @export_group("Option A")
+@export var option_a_give_item: String = "" # 填 "item_pickaxe"
 @export var option_a_text: String = "继续前进"
 @export var option_a_cost_ap: int = 0
 @export var option_a_cost_hp: int = 0
 
 # 选项 B
 @export_group("Option B")
+@export var option_b_give_item: String = ""
 @export var option_b_text: String = "" # 为空则不显示
 @export var option_b_cost_ap: int = 0
 @export var option_b_cost_hp: int = 0

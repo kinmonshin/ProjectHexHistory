@@ -3,25 +3,17 @@
 [ext_resource type="Script" uid="uid://4p64mirniig4" path="res://game/game_main.gd" id="1_6lc1f"]
 [ext_resource type="PackedScene" uid="uid://b2otoir310ikp" path="res://view/hex_map_viewer.tscn" id="2_b7flu"]
 [ext_resource type="TileSet" uid="uid://5d1a7nnmjqw8" path="res://game/fog_tileset.tres" id="2_msxjj"]
-[ext_resource type="Theme" uid="uid://chxgkda6ftdgb" path="res://assets/theme/commander_theme.tres" id="4_msxjj"]
 [ext_resource type="PackedScene" uid="uid://d2irhs80ktyb2" path="res://game/ui/event_window.tscn" id="5_w0466"]
 [ext_resource type="PackedScene" uid="uid://4rff6e3ohli8" path="res://game/ui/result_window.tscn" id="6_0mnoj"]
+[ext_resource type="PackedScene" uid="uid://b4r6j7mavy5y0" path="res://editor/ui/save_load_menu.tscn" id="6_frjd7"]
 
-[sub_resource type="LabelSettings" id="LabelSettings_b7flu"]
-font_size = 24
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0mnoj"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_msxjj"]
-corner_radius_top_left = 5
-corner_radius_top_right = 5
-corner_radius_bottom_right = 5
-corner_radius_bottom_left = 5
+[sub_resource type="LabelSettings" id="LabelSettings_0mnoj"]
+shadow_size = 4
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_w0466"]
-bg_color = Color(0.76828635, 0.5502503, 0.30295736, 1)
-corner_radius_top_left = 5
-corner_radius_top_right = 5
-corner_radius_bottom_right = 5
-corner_radius_bottom_left = 5
+[sub_resource type="LabelSettings" id="LabelSettings_frjd7"]
+shadow_size = 4
 
 [node name="GameMain" type="Node2D"]
 script = ExtResource("1_6lc1f")
@@ -35,43 +27,43 @@ tile_set = ExtResource("2_msxjj")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
-[node name="StatusBar" type="PanelContainer" parent="HUD"]
-offset_left = 20.0
-offset_top = 20.0
-offset_right = 180.0
-offset_bottom = 56.0
-theme = ExtResource("4_msxjj")
+[node name="MarginContainer" type="MarginContainer" parent="HUD"]
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
 
-[node name="MarginContainer" type="MarginContainer" parent="HUD/StatusBar"]
+[node name="LeftSidebar" type="VBoxContainer" parent="HUD/MarginContainer"]
 layout_mode = 2
-theme_override_constants/margin_left = 5
-theme_override_constants/margin_top = 5
-theme_override_constants/margin_right = 5
-theme_override_constants/margin_bottom = 5
+theme_override_constants/separation = 10
 
-[node name="HBoxContainer" type="HBoxContainer" parent="HUD/StatusBar/MarginContainer"]
+[node name="StatsPanel" type="PanelContainer" parent="HUD/MarginContainer/LeftSidebar"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_0mnoj")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HUD/MarginContainer/LeftSidebar/StatsPanel"]
 layout_mode = 2
 
-[node name="Icon" type="Label" parent="HUD/StatusBar/MarginContainer/HBoxContainer"]
+[node name="LabelSupplies" type="Label" parent="HUD/MarginContainer/LeftSidebar/StatsPanel/HBoxContainer"]
 layout_mode = 2
-text = "⚡"
-label_settings = SubResource("LabelSettings_b7flu")
-horizontal_alignment = 1
+text = "🍖 50"
+label_settings = SubResource("LabelSettings_0mnoj")
 
-[node name="ProgressBar" type="ProgressBar" parent="HUD/StatusBar/MarginContainer/HBoxContainer"]
-custom_minimum_size = Vector2(100, 0)
+[node name="LabelHP" type="Label" parent="HUD/MarginContainer/LeftSidebar/StatsPanel/HBoxContainer"]
 layout_mode = 2
-size_flags_vertical = 4
-theme_override_styles/background = SubResource("StyleBoxFlat_msxjj")
-theme_override_styles/fill = SubResource("StyleBoxFlat_w0466")
-value = 100.0
+text = "❤️ 3"
+label_settings = SubResource("LabelSettings_frjd7")
 
-[node name="LabelValue" type="Label" parent="HUD/StatusBar/MarginContainer/HBoxContainer"]
+[node name="InventoryList" type="VBoxContainer" parent="HUD/MarginContainer/LeftSidebar"]
 layout_mode = 2
-text = "10/10"
-label_settings = SubResource("LabelSettings_b7flu")
-horizontal_alignment = 1
+theme_override_constants/separation = 5
 
 [node name="EventWindow" parent="HUD" instance=ExtResource("5_w0466")]
+visible = false
+
+[node name="SaveLoadMenu" parent="HUD" instance=ExtResource("6_frjd7")]
+visible = false
 
 [node name="ResultWindow" parent="." instance=ExtResource("6_0mnoj")]
+visible = false

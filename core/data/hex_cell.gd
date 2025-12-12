@@ -34,6 +34,8 @@ enum TerrainType {
 # 新增字段
 @export var linked_event: GameEvent # 直接引用资源
 
+var visual_marker: Node2D = null
+
 # --- 辅助方法 ---
 
 # 获取 s 坐标 (计算属性)

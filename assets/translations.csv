@@ -42,17 +42,28 @@ MSG_OVERWRITE,Overwrite existing save file?,检测到同名文件，是否覆盖
 WIN_TITLE_MOVE,Select Target Region,选择目标区域
 
 
---- UI ---
-GAME_UI_RESTART, Restart Journey, 重新开始
-GAME_UI_QUIT, Abandon, 放弃旅途
-GAME_UI_VICTORY, Victory, 生存
-GAME_UI_DEFEAT, Defeat, 死亡
---- Stats ---
-GAME_STAT_SUPPLIES, Supplies: %s, 补给: %s
-GAME_STAT_HP, HP: %s, 生命: %s
-GAME_MSG_NO_SUPPLIES, Out of supplies!, 补给耗尽！
-GAME_MSG_BLOCKED, The path is blocked., 前方道路不通。
---- Events ---
-EVT_VICTORY_TITLE, The Lighthouse, 灯塔
-EVT_VICTORY_DESC, You see the light..., 你看到了光...
+
+GAME_UI_RESTART,Restart Journey,重新开始
+GAME_UI_QUIT,Abandon,放弃旅途
+GAME_UI_VICTORY,Victory,生存
+GAME_UI_DEFEAT,Defeat,死亡
+
+GAME_STAT_SUPPLIES,Supplies: %s,补给: %s
+GAME_STAT_HP,HP: %s,生命: %s
+GAME_MSG_OCEAN,The abyss stares back.,凝视深渊，无法通过。
+GAME_MSG_NO_SUPPLIES,We are starving...,补给耗尽...
+GAME_MSG_NO_SUPPLIES,Out of supplies!,补给耗尽！
+GAME_MSG_TOO_FAR,Too far to travel.,太远了，无法到达。
+GAME_MSG_BLOCKED,The path is blocked.,前方道路不通。
+
+EVT_GET_PICKAXE,You found a rusty pickaxe.,你发现了一把生锈的登山镐。
+EVT_GET_RAFT,You found a makeshift raft.,你发现了一个简易木筏。
+EVT_LOOT_TITLE,Supplies Found,发现物资
+EVT_OPT_TAKE,Take it,拿走
+EVT_OPT_LEAVE,Leave it,离开
+EVT_VICTORY_TITLE,The Lighthouse,灯塔
+EVT_VICTORY_DESC,You see the light...,你看到了光...
+
+ITEM_PICKAXE,Pickaxe ⛏️,登山镐 ⛏️
+ITEM_RAFT,Raft 🛶,木筏 🛶
 

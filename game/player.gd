@@ -4,8 +4,8 @@ extends Node2D
 
 signal movement_finished(new_coords: Vector2i)
 
-const MIN_ZOOM = 0.5 # 最远只能看到一部分 (值越小视野越大)
-const MAX_ZOOM = 2.0 # 最近能贴脸看
+const MIN_ZOOM = 0.4 # 最远只能看到一部分 (值越小视野越大)
+const MAX_ZOOM = 1.3 # 最近能贴脸看
 
 # --- 新增：移动状态标记 ---
 var is_moving: bool = false 

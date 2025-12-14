@@ -16,10 +16,13 @@ const LOOT_EVENTS = [
 	"res://game/events/event_loot_raft.tres"
 ]
 
+const MAX_DAYS: int = 30      # 死亡倒计时
+
 @onready var map_viewer = $HexMapViewer # 确保节点路径正确
 @onready var fog_layer = $FogLayer # 确保场景里有这个节点，且名字一致
-@onready var label_hp: Label = $HUD/MarginContainer/LeftSidebar/StatsPanel/HBoxContainer/LabelHP
-@onready var label_supplies: Label = $HUD/MarginContainer/LeftSidebar/StatsPanel/HBoxContainer/LabelSupplies
+@onready var val_energy: Label = $HUD/MarginContainer/LeftSidebar/StatsPanel/HBoxContainer/EnergyGroup/ValEnergy
+@onready var val_hp: Label = $HUD/MarginContainer/LeftSidebar/StatsPanel/HBoxContainer/LifeGroup/ValHP
+@onready var val_day: Label = $HUD/MarginContainer/LeftSidebar/StatsPanel/HBoxContainer/DayGroup/ValDay
 @onready var result_window: CanvasLayer = $ResultWindow
 @onready var system_menu = $HUD/SaveLoadMenu
 @onready var inventory_list: VBoxContainer = $HUD/MarginContainer/LeftSidebar/InventoryList
@@ -27,17 +30,21 @@ const LOOT_EVENTS = [
 # 绑定窗口
 @onready var event_window: EventWindow = $HUD/EventWindow
 
+var current_energy: int = 50  # 能量 (原 Supplies)
+var current_hp: int = 3       # 生命
+var current_day: int = 1      # 当前天数
 var player: Player
 var current_region: RegionData
 var is_input_locked: bool = false # 输入锁，防止移动中连点
-var current_supplies = 50 # 初始补给
-var current_hp = 3        # 初始生命
-
+var active_pois: Array[Node2D] = [] # 存储所有生成的 Marker
+var astar: AStar2D # 寻路核心
+var hex_to_id = {} # 映射字典：Hex坐标字符串 "q,r" -> AStar ID (int)
 # 物品清单 (简单的字符串数组)
 var inventory: Array[String] = []
-
 # 记录当前触发的事件，方便结算
 var active_event: GameEvent
+# 世界状态
+var global_cost_modifier: int = 0 # 恶化系数 (0 = 正常, 1 = 困难)
 
 func _ready():
 	randomize() # <--- 核心修复：初始化随机数种子
@@ -46,23 +53,46 @@ func _ready():
 	_spawn_loot()      # 3. 再造物资 (蓝色)
 	_init_fog()        # 4. 最后盖雾
 	_spawn_player()    # 5. 放人
-	
+	_init_pathfinding()
 	# 3. 连接地图点击信号 (HexMapViewer 自带的信号)
 	map_viewer.hex_clicked.connect(_on_hex_clicked)
 	# 监听玩家移动完成，更新迷雾
 	player.movement_finished.connect(_on_player_moved)
 
 	SignalBus.locale_changed.connect(_update_ui)
+	SignalBus.request_camp.connect(_on_camp_pressed)
 	event_window.option_selected.connect(_on_event_option_selected)
 	result_window.restart_requested.connect(_on_restart_game)
-	
+
 	_update_ui() # 初始化 UI
+
+	# --- G1: 开局目标提示 ---
+	var dialog = AcceptDialog.new()
+	dialog.title = "任务"
+	dialog.dialog_text = "远方的灯塔正在呼唤你...\n\n你必须在 30 天内抵达。\n每走一步消耗能量，能量耗尽会受伤。\n扎营可以恢复能量，但会消耗宝贵的 5 天时间。"
+	add_child(dialog)
+	dialog.popup_centered()
 
 # --- 核心：处理游戏结束 ---
 func _check_game_over_condition():
 	# 失败判定：体力耗尽
-	if current_supplies <= 0:
+	if current_energy <= 0:
 		_trigger_game_over(false, "体力耗尽，你倒在了荒野中...")
+
+func _on_camp_pressed():
+	if is_input_locked: return
+	
+	# 简单的扎营逻辑
+	print("扎营休息... (Day +5, Energy Refilled)")
+	
+	current_day += 5
+	current_energy = 50 # 回满
+	
+	_update_ui()
+	
+	# G5: 检查超时
+	if current_day > MAX_DAYS:
+		_trigger_game_over(false, "时间耗尽，灯塔熄灭了...\n你迷失在了永恒的黑夜中。")
 
 # 添加道具
 func add_item(item_key: String):
@@ -71,44 +101,98 @@ func add_item(item_key: String):
 	_update_inventory_ui()
 	print("获得道具: ", item_key)
 
+func _init_pathfinding():
+	astar = AStar2D.new()
+	hex_to_id.clear()
+	
+	print("正在构建导航网格...")
+	
+	var cells = current_region.hex_cells
+	
+	# 1. 添加所有点 (Points)
+	for i in range(cells.size()):
+		var cell = cells[i]
+		
+		# 跳过深渊 (不可通行)
+		if cell.terrain == HexCell.TerrainType.OCEAN:
+			continue
+			
+		# 注册点：ID 使用数组索引 i
+		# 权重 (Weight Scale)：根据地形消耗决定
+		# 这样寻路算法会自动避开高消耗的山地，哪怕路程短
+		var weight = _get_move_cost(cell)
+		
+		# AStar2D 需要 Vector2 类型的 position，我们用像素位置方便调试
+		# 但其实逻辑上它不关心 position，只关心连接关系
+		var pos = map_viewer.get_cell_center(cell.q, cell.r)
+		
+		astar.add_point(i, pos, weight)
+		
+		# 建立映射方便查找
+		var key = "%d,%d" % [cell.q, cell.r]
+		hex_to_id[key] = i
+
+	# 2. 连接点 (Connections)
+	for i in range(cells.size()):
+		var cell = cells[i]
+		
+		# 如果这个点没加进去（比如是深渊），跳过
+		if not astar.has_point(i): continue
+		
+		# 检查 6 个方向的邻居
+		for dir in range(6):
+			var n_coords = HexMath.get_neighbor(cell, dir)
+			var n_key = "%d,%d" % [n_coords.x, n_coords.y]
+			
+			if hex_to_id.has(n_key):
+				var n_id = hex_to_id[n_key]
+				# 建立双向连接
+				astar.connect_points(i, n_id)
+	
+	print("导航网格构建完成。节点数: ", astar.get_point_count())
+
 # --- 新增：战利品生成函数 ---
 func _spawn_loot():
-	# 1. 筛选合法格子 (非海，且无其他事件)
+	# 1. 筛选合法格子
 	var valid_cells = current_region.hex_cells.filter(func(c): 
 		return c.terrain != HexCell.TerrainType.OCEAN and c.linked_event == null
 	)
 	
 	if valid_cells.size() < 3: return
 	
-	# 定义掉落池 (资源路径)
 	var loot_pool = [
 		"res://game/events/event_loot_pickaxe.tres",
 		"res://game/events/event_loot_raft.tres"
 	]
 	
-	# 循环生成 3 个
 	for i in range(3):
 		var target_cell = valid_cells.pick_random()
 		
-		# 实例化 Marker
-		var marker = load("res://game/objects/marker.tscn").instantiate()
+		# 🟢 修改 1: 加载 loot.tscn (而不是 marker.tscn)
+		var marker = load("res://game/objects/loot.tscn").instantiate()
 		add_child(marker)
+		
+		# 设置位置
 		marker.position = map_viewer.get_cell_center(target_cell.q, target_cell.r)
+		marker.hex_coords = Vector2i(target_cell.q, target_cell.r) 
 		
-		# ✅ 修复 1: 设置颜色 (蓝色代表物资)
-		marker.modulate = Color(0.2, 0.6, 1.0) 
-		
-		# 随机选一个事件
+		# 🟢 修改 2: 默认隐藏，并加入管理列表
+		# 我们把“是否显示”的权力完全交给 _update_fog 函数（如果您希望终点一开始就可见，可以不加这两行，或者单独处理)
+		# marker.visible = false # 这是代码强制隐藏，注释后，则改回检查器开关
+		active_pois.append(marker)  # 保持加入列表，以便后续被迷雾逻辑管理
+
+	
+		# 绑定事件
 		var event_path = loot_pool.pick_random()
 		target_cell.linked_event = load(event_path)
 		
-		# ✅ 修复 2: 绑定视觉对象 (至关重要)
+		# 绑定视觉对象 (用于拾取后销毁)
 		target_cell.visual_marker = marker
 		
-		# 从池子里移除已用的格子，防止重叠 (进阶优化)
+		# 防止重叠
 		valid_cells.erase(target_cell)
 		
-		print("生成蓝色物资于: (%d, %d)" % [target_cell.q, target_cell.r])
+		print("生成物资于: (%d, %d)" % [target_cell.q, target_cell.r])
 
 # 刷新 UI (RimWorld 风格：竖向列表)
 func _update_inventory_ui():
@@ -168,6 +252,11 @@ func _unhandled_input(event):
 			system_menu.close_menu()
 		else:
 			system_menu.open_menu()
+			
+	# 按 T 键触发世界恶化 (测试用)
+	if event is InputEventKey and event.pressed and event.keycode == KEY_T:
+		global_cost_modifier += 1
+		print("【系统】世界开始崩塌，移动消耗 +1 (当前加成: %d)" % global_cost_modifier)
 
 # 触发结局
 func _trigger_game_over(is_victory: bool, msg: String):
@@ -175,34 +264,31 @@ func _trigger_game_over(is_victory: bool, msg: String):
 	result_window.show_result(is_victory, msg)
 
 func _spawn_poi():
-	# 1. 筛选合法格子 (非海洋)
-	# 矩形地图生成后，current_region.hex_cells 里应该已经剔除了边缘深渊
-	# 但为了保险，还是 filter 一下
+	# 1. 筛选合法格子
 	var valid_cells = current_region.hex_cells.filter(func(c): 
 		return c.terrain != HexCell.TerrainType.OCEAN
 	)
-	
 	if valid_cells.size() < 2: return
 	
-	# 2. 随机选取终点 (离起点远一点更好，这里先随机)
+	# 2. 随机选取
 	var target_cell = valid_cells.pick_random()
 	
-	# 3. 实例化 Marker
+	# 3. 实例化
+	# 终点依然使用 marker.tscn (金色/高亮)
 	var marker_scene = load("res://game/objects/marker.tscn")
 	var marker = marker_scene.instantiate()
-	add_child(marker) # 加到 GameMain 下，和 MapViewer 平级或更下
+	add_child(marker)
 	
-	# 4. 设置位置
 	marker.position = map_viewer.get_cell_center(target_cell.q, target_cell.r)
+	marker.hex_coords = Vector2i(target_cell.q, target_cell.r)
 	
-	# 5. 绑定胜利事件
+	# 🟢 统一管理：默认也隐藏，加入列表
+	# (如果您希望终点一开始就可见，可以不加这两行，或者单独处理)
+	# marker.visible = false # 这是代码强制隐藏，注释后，则改回检查器开关
+	active_pois.append(marker) # 保持加入列表，以便后续被迷雾逻辑管理
+	
 	target_cell.linked_event = load("res://game/events/event_victory.tres")
-	
-	# 🟢 新增：建立视觉绑定
 	target_cell.visual_marker = marker
-	print("DEBUG: Marker 已绑定到格子 (%d, %d), 对象: %s" % [target_cell.q, target_cell.r, marker])
-	
-	print("终点已生成于: ", Vector2i(target_cell.q, target_cell.r))
 
 # 重开逻辑
 func _on_restart_game():
@@ -212,17 +298,30 @@ func _on_restart_game():
 # --- 核心：UI 更新 (使用 i18n) ---
 func _update_ui():
 	# RimWorld 风格：图标 + 数值
-	# 注意：这里我们不需要 "补给: 50"，直接 "🍖 50" 更直观
-	# 如果您坚持要文字，可以用 tr("GAME_STAT_SUPPLIES")
-	
-	label_supplies.text = "🍖 %d" % current_supplies
-	label_hp.text = "❤️ %d" % current_hp
+	# 只要更新数字即可，图标已经由 TextureRect 处理了
+	if val_energy:
+		# 也可以加上 /30 的上限显示
+		val_energy.text = "%d / %d" % [current_energy, 50]
+		
+	if val_hp:
+		val_hp.text = "%d" % current_hp
+		
+	# 更新日期
+	if val_day:
+		# 格式化字符串： "第 1 / 30 天"
+		val_day.text = tr("GAME_STAT_DAY") % [current_day, MAX_DAYS]
+		
+		# 视觉反馈：如果只剩最后 5 天，变红警示
+		if current_day >= MAX_DAYS - 5:
+			val_day.modulate = Color(1, 0.3, 0.3)
+		else:
+			val_day.modulate = Color.WHITE
 	
 	# 视觉警示 (变红)
-	if current_supplies <= 10:
-		label_supplies.modulate = Color(1, 0.3, 0.3)
+	if current_energy <= 10:
+		val_energy.modulate = Color(1, 0.3, 0.3)
 	else:
-		label_supplies.modulate = Color.WHITE
+		val_energy.modulate = Color.WHITE
 
 # --- 新增：迷雾初始化 ---
 func _init_fog():
@@ -235,16 +334,8 @@ func _init_fog():
 		var tile_pos = map_viewer.axial_to_tilemap(cell.q, cell.r)
 		fog_layer.set_cell(tile_pos, FOG_SOURCE_ID, FOG_ATLAS_COORD)
 
-# --- 新增：玩家移动回调 ---
-func _on_player_moved(new_coords: Vector2i):
-	print("玩家到达: ", new_coords)
-	_update_fog(new_coords)
-
 # --- 新增：更新迷雾 (擦除) ---
-func _update_fog(center_hex: Vector2i):
-	# 定义视野半径 (Radius)
-	var vision_radius = 1
-	
+func _update_fog(center_hex: Vector2i, vision_radius: int = 2):
 	# 遍历周围格子
 	for q in range(-vision_radius, vision_radius + 1):
 		for r in range(-vision_radius, vision_radius + 1):
@@ -261,6 +352,32 @@ func _update_fog(center_hex: Vector2i):
 				var cell = current_region.get_hex(target_q, target_r) # 需确保 RegionData 有 get_hex
 				if cell:
 					cell.is_explored = true
+					
+	# --- 🟢 修改：刷新 POI 可见性 ---
+	# 逻辑变更为：如果 POI 所在的格子被探索了 (is_explored == true)，则显示 POI
+	for poi in active_pois:
+		if poi.visible: continue # 已经显示的就不管了
+		
+		# 获取 POI 所在的格子数据
+		var cell = current_region.get_hex(poi.hex_coords.x, poi.hex_coords.y)
+		
+		# 只要格子被探索过，图标就显示
+		# 这完美符合“迷雾散去即见”的直觉
+		if cell and cell.is_explored:
+			poi.visible = true
+			print("发现了物体！在: ", poi.hex_coords) # 可以在这里播放一个“发现”音效
+
+# 玩家移动完成后的回调
+func _on_player_moved(new_coords: Vector2i):
+	# print("玩家到达: ", new_coords)
+	
+	# 获取当前地形
+	var cell = current_region.get_hex(new_coords.x, new_coords.y)
+	if not cell: return
+	
+	# ✅ 使用基于地形的更新函数
+	# 它内部会判断地形，然后决定传 2 还是 5 给 _update_fog
+	_update_fog_based_on_terrain(new_coords, cell.terrain)
 
 func _init_test_level():
 	var world = RegionData.new()
@@ -297,106 +414,111 @@ func _spawn_player():
 
 # --- 核心：获取移动消耗 ---
 func _get_move_cost(cell: HexCell) -> int:
-		# --- 特殊地形判断 ---
-	# 1. 河流/深水 (原本不可通过，现在有木筏可过)
-	# 假设我们在生成器里把一部分水域标记为了可通行的浅水，或者就是 OCEAN
-	# 注意：之前 _on_hex_clicked 里有个拦截 "if terrain == OCEAN: return"
-	# 我们需要去改那里，或者在这里处理消耗
+	var base_cost = 1
 	
-	# 2. 山脉 (有镐子减耗)
+	# 地形差异
 	if cell.terrain == HexCell.TerrainType.MOUNTAIN:
-		if "item_pickaxe" in inventory:
-			return 1 # 有镐子，如履平地
-		else:
-			return 3 # 没镐子，爬死你
-			
-	# 3. 森林 (有砍刀减耗)
-	if cell.terrain == HexCell.TerrainType.FOREST:
-		if "item_machete" in inventory:
-			return 1
-		else:
-			return 2
-
-	if cell.terrain == HexCell.TerrainType.OCEAN:
-		return 2 # 4. 划船也挺累
-
-	match cell.terrain:
-		HexCell.TerrainType.PLAINS: return 1
-		HexCell.TerrainType.FOREST: return 2
-		HexCell.TerrainType.HILLS: return 2
-		HexCell.TerrainType.MOUNTAIN: return 3
-		HexCell.TerrainType.DESERT: return 3
-		HexCell.TerrainType.SNOW: return 3
-		_: return 1
+		base_cost = 3
+	elif cell.terrain == HexCell.TerrainType.FOREST:
+		base_cost = 2
+	elif cell.terrain == HexCell.TerrainType.OCEAN:
+		return 999 # 不可通行
+		
+	# G4: 叠加世界恶化 (如果世界崩塌了，走路变累)
+	return base_cost + global_cost_modifier
 
 # --- 核心：点击处理 ---
 func _on_hex_clicked(target_hex: Vector2i):
 	if is_input_locked: return
 	
-	var p_hex = player.hex_coords
-	var a = HexCell.new(); a.q = p_hex.x; a.r = p_hex.y
-	var b = HexCell.new(); b.q = target_hex.x; b.r = target_hex.y
-	var dist = HexMath.get_distance(a, b)
+	# 1. 获取起点和终点的 ID
+	var start_key = "%d,%d" % [player.hex_coords.x, player.hex_coords.y]
+	var end_key = "%d,%d" % [target_hex.x, target_hex.y]
 	
-	if dist != 1:
-		print(tr("GAME_MSG_TOO_FAR"))
+	if not hex_to_id.has(start_key) or not hex_to_id.has(end_key):
+		print(tr("GAME_MSG_OCEAN")) # 点击了不可通行区域
 		return
+		
+	var start_id = hex_to_id[start_key]
+	var end_id = hex_to_id[end_key]
+	
+	# 2. 计算路径
+	# get_id_path 会返回经过的所有点的 ID 数组 (包括起点)
+	var path_ids = astar.get_id_path(start_id, end_id)
+	
+	if path_ids.size() <= 1:
+		return # 点了自己，或者无路可走
+	
+	# 3. 开始沿路径移动 (协程)
+	_execute_path_movement(path_ids)
 
-	var cell = current_region.get_hex(target_hex.x, target_hex.y)
-	if not cell: return
+# --- 新增：分步移动协程 ---
+func _execute_path_movement(path_ids: PackedInt64Array):
+	is_input_locked = true
 	
-	if cell.terrain == HexCell.TerrainType.OCEAN:
-		# 简单判断：如果有木筏则通过，没有则阻挡
-		if "item_raft" in inventory:
-			pass
-		else:
-			print(tr("GAME_MSG_OCEAN"))
-			return
-	
-	var cost = _get_move_cost(cell)
-	
-	if current_supplies >= cost:
-		is_input_locked = true
-		current_supplies -= cost
-		_update_ui()
+	# 从索引 1 开始移动
+	for i in range(1, path_ids.size()):
+		var next_id = path_ids[i]
+		var target_cell = current_region.hex_cells[next_id]
+		var target_hex = Vector2i(target_cell.q, target_cell.r)
 		
-		_update_fog(target_hex)
-		var target_pos = map_viewer.get_cell_center(target_hex.x, target_hex.y)
+		# 1. 计算消耗
+		var cost = _get_move_cost(target_cell)
 		
-		player.move_to(target_hex, target_pos)
-		
-		await player.movement_finished
-		is_input_locked = false
-		
-		# --- 事件与销毁逻辑 ---
-		if cell.linked_event:
-			print("!!! 触发事件，开始清理流程 !!!")
-			
-			# 1. 先销毁视觉对象 (最优先执行)
-			if cell.visual_marker:
-				print("!!! 正在销毁 Marker: ", cell.visual_marker)
-				cell.visual_marker.queue_free()
-				cell.visual_marker = null # 断开引用
-			else:
-				print("!!! 警告: 格子有事件，但 visual_marker 为空 (可能是隐形事件) !!!")
-			
-			# 2. 触发弹窗
-			_trigger_event(cell.linked_event)
-			
-			# 3. 清空数据链接
-			cell.linked_event = null
-			
-	else:
-		# 补给耗尽逻辑
-		if current_hp > 0:
-			print(tr("GAME_MSG_NO_SUPPLIES") + " HP -1")
-			current_supplies = 0
-			current_hp -= 1
+		# 2. 检查能量
+		if current_energy >= cost:
+			current_energy -= cost
 			_update_ui()
-			if current_hp <= 0:
-				_trigger_game_over(false, tr("GAME_MSG_DEFEAT")) # 确保 CSV 有这个 Key
+			
+			# 执行移动动画
+			var target_pos = map_viewer.get_cell_center(target_hex.x, target_hex.y)
+			_update_fog_based_on_terrain(target_hex, target_cell.terrain) # 开视野
+			
+			player.move_to(target_hex, target_pos)
+			await player.movement_finished
+			
+			
+			
+			# 检查事件
+			if target_cell.linked_event:
+				_trigger_event(target_cell.linked_event)
+				target_cell.linked_event = null
+				break
 		else:
-			_trigger_game_over(false, tr("GAME_MSG_DEFEAT"))
+			# 能量耗尽：扣血机制
+			if current_hp > 0:
+				print("能量耗尽！强行移动 (HP -1)")
+				current_hp -= 1
+				current_energy = 0 # 保持为0
+				_update_ui()
+				
+				# 即使没能量也让走一步(带惩罚)
+				var target_pos = map_viewer.get_cell_center(target_hex.x, target_hex.y)
+				_update_fog_based_on_terrain(target_hex, target_cell.terrain)
+				player.move_to(target_hex, target_pos)
+				await player.movement_finished
+				
+				if current_hp <= 0:
+					_trigger_game_over(false, "你累死在了半路...")
+					break
+			else:
+				break # 彻底死了
+				
+	is_input_locked = false
+
+# 基于地形更新迷雾
+func _update_fog_based_on_terrain(center_hex: Vector2i, terrain_type: int):
+	var radius = 3 # 基础视野扩大到 3
+	
+	# 高地优势
+	if terrain_type == HexCell.TerrainType.MOUNTAIN:
+		radius = 5 # 登上高山，视野大开
+		print("高地视野！")
+	elif terrain_type == HexCell.TerrainType.FOREST:
+		radius = 2 # 森林里视野受限
+		
+	# 调用通用的更新函数
+	_update_fog(center_hex, radius)
 
 # 触发事件的主入口
 func _trigger_event(event_res: GameEvent):
@@ -447,18 +569,33 @@ func _on_event_option_selected(index: int):
 		item_to_give = active_event.option_b_give_item
 		
 	# 4. 执行扣费
-	current_supplies -= cost_ap
+	current_energy -= cost_ap
 	# current_hp -= cost_hp
 	
 	# 5. 执行发奖 (✅ 在清空之前执行)
 	if item_to_give != "":
 		add_item(item_to_give)
 	
+	# 🔴 核心修复：销毁地图上的图标
+		# 获取玩家当前所在的格子 (因为事件是踩上去触发的)
+		var current_cell = current_region.get_hex(player.hex_coords.x, player.hex_coords.y)
+		
+		if current_cell and current_cell.visual_marker:
+			# 从 active_pois 列表中移除 (如果有的话)，防止报错
+			if active_pois.has(current_cell.visual_marker):
+				active_pois.erase(current_cell.visual_marker)
+			
+			# 销毁节点
+			current_cell.visual_marker.queue_free()
+			current_cell.visual_marker = null
+			
+			print("地图物资图标已销毁")
+			
 	# 6. 刷新 UI
 	_update_ui()
 	
-	if current_supplies < 0: 
-		current_supplies = 0
+	if current_energy < 0: 
+		current_energy = 0
 		print("因为事件导致体力透支！")
 	
 	# 7. 收尾：恢复操作并清空缓存 (✅ 必须放在最后)

@@ -1,9 +1,10 @@
 [gd_resource type="TileSet" load_steps=3 format=3 uid="uid://5d1a7nnmjqw8"]
 
-[ext_resource type="Texture2D" uid="uid://c6ku34tsobba0" path="res://assets/tiles/黑色64-1.png.png" id="1_mbsjo"]
+[ext_resource type="Texture2D" uid="uid://bqj534coak8ep" path="res://assets/tiles/黑色迷雾.png" id="1_mbsjo"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_yiseq"]
 texture = ExtResource("1_mbsjo")
+margins = Vector2i(1, 1)
 texture_region_size = Vector2i(64, 64)
 0:0/0 = 0
 

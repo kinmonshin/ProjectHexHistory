@@ -19,6 +19,20 @@ static func get_distance(a: HexCell, b: HexCell) -> int:
 	var ds = abs(a.get_s() - b.get_s())
 	return int((dq + dr + ds) / 2)
 
+# 新增：直接计算两个坐标 (q,r) 之间的距离
+# 输入：a, b 均为 Vector2i(q, r)
+static func get_distance_coords(a: Vector2i, b: Vector2i) -> int:
+	# 计算 s 坐标 (s = -q - r)
+	var a_s = -a.x - a.y
+	var b_s = -b.x - b.y
+	
+	var dq = abs(a.x - b.x)
+	var dr = abs(a.y - b.y)
+	var ds = abs(a_s - b_s)
+	
+	return int((dq + dr + ds) / 2)
+
+
 # --- 新增代码：几何转换 ---
 
 # 1. 六边格坐标 -> 屏幕像素坐标 (中心点)

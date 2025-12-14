@@ -50,6 +50,7 @@ GAME_UI_DEFEAT,Defeat,死亡
 
 GAME_STAT_SUPPLIES,Supplies: %s,补给: %s
 GAME_STAT_HP,HP: %s,生命: %s
+GAME_STAT_DAY,Day %d / %d	,第 %d / %d 天
 GAME_MSG_OCEAN,The abyss stares back.,凝视深渊，无法通过。
 GAME_MSG_NO_SUPPLIES,We are starving...,补给耗尽...
 GAME_MSG_NO_SUPPLIES,Out of supplies!,补给耗尽！

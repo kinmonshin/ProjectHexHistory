@@ -1,6 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://d3gh0qscqg7n4"]
+[gd_scene load_steps=6 format=3 uid="uid://d3gh0qscqg7n4"]
 
 [ext_resource type="Texture2D" uid="uid://barja4657fp76" path="res://icon.svg" id="1_s5yat"]
+[ext_resource type="Script" uid="uid://lkycjaayn80c" path="res://game/objects/loot.gd" id="1_xy53h"]
 
 [sub_resource type="Animation" id="Animation_4ri01"]
 length = 0.001
@@ -41,7 +42,9 @@ _data = {
 }
 
 [node name="Look" type="Node2D"]
+visible = false
 z_index = 20
+script = ExtResource("1_xy53h")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 modulate = Color(0, 0, 1, 1)

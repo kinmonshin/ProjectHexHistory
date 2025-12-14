@@ -17,7 +17,8 @@ signal request_navigate_to(target_region: Resource)
 # ✅ 务必确认这两行存在且拼写完全一致：
 signal request_navigate_back()
 signal breadcrumbs_updated(stack_names: Array[String])
-
+# 请求扎营 (由 GameActionBar 发出，GameMain 接收)
+signal request_camp()
 # --- C. 数据操作信号 ---
 signal map_data_modified()
 signal hex_hovered(coord: Vector2i)

@@ -1,19 +1,20 @@
-[gd_scene load_steps=10 format=3 uid="uid://cm75oniq8nmco"]
+[gd_scene load_steps=13 format=3 uid="uid://cm75oniq8nmco"]
 
 [ext_resource type="Script" uid="uid://4p64mirniig4" path="res://game/game_main.gd" id="1_6lc1f"]
 [ext_resource type="PackedScene" uid="uid://b2otoir310ikp" path="res://view/hex_map_viewer.tscn" id="2_b7flu"]
 [ext_resource type="TileSet" uid="uid://5d1a7nnmjqw8" path="res://game/fog_tileset.tres" id="2_msxjj"]
+[ext_resource type="Texture2D" uid="uid://bjmyid64mgmqq" path="res://assets/icons/icon_energy.png" id="4_igist"]
+[ext_resource type="Texture2D" uid="uid://bddd8euvip2nx" path="res://assets/icons/icon_heart.png" id="5_qmm20"]
 [ext_resource type="PackedScene" uid="uid://d2irhs80ktyb2" path="res://game/ui/event_window.tscn" id="5_w0466"]
 [ext_resource type="PackedScene" uid="uid://4rff6e3ohli8" path="res://game/ui/result_window.tscn" id="6_0mnoj"]
+[ext_resource type="PackedScene" uid="uid://dy3f8i4akcqem" path="res://game/ui/game_action_bar.tscn" id="6_04882"]
 [ext_resource type="PackedScene" uid="uid://b4r6j7mavy5y0" path="res://editor/ui/save_load_menu.tscn" id="6_frjd7"]
+[ext_resource type="Texture2D" uid="uid://r1h403j8alen" path="res://assets/icons/icon_day.png" id="6_qmm20"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0mnoj"]
 
-[sub_resource type="LabelSettings" id="LabelSettings_0mnoj"]
-shadow_size = 4
-
-[sub_resource type="LabelSettings" id="LabelSettings_frjd7"]
-shadow_size = 4
+[sub_resource type="LabelSettings" id="LabelSettings_ebvj2"]
+shadow_color = Color(0, 0, 0, 0.23529412)
 
 [node name="GameMain" type="Node2D"]
 script = ExtResource("1_6lc1f")
@@ -21,7 +22,6 @@ script = ExtResource("1_6lc1f")
 [node name="HexMapViewer" parent="." instance=ExtResource("2_b7flu")]
 
 [node name="FogLayer" type="TileMapLayer" parent="."]
-modulate = Color(0.13319641, 0.13319641, 0.13319638, 0.8)
 z_index = 10
 tile_set = ExtResource("2_msxjj")
 
@@ -44,16 +44,46 @@ theme_override_styles/panel = SubResource("StyleBoxEmpty_0mnoj")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="HUD/MarginContainer/LeftSidebar/StatsPanel"]
 layout_mode = 2
+theme_override_constants/separation = 20
 
-[node name="LabelSupplies" type="Label" parent="HUD/MarginContainer/LeftSidebar/StatsPanel/HBoxContainer"]
+[node name="EnergyGroup" type="HBoxContainer" parent="HUD/MarginContainer/LeftSidebar/StatsPanel/HBoxContainer"]
 layout_mode = 2
-text = "🍖 50"
-label_settings = SubResource("LabelSettings_0mnoj")
 
-[node name="LabelHP" type="Label" parent="HUD/MarginContainer/LeftSidebar/StatsPanel/HBoxContainer"]
+[node name="IconEnergy" type="TextureRect" parent="HUD/MarginContainer/LeftSidebar/StatsPanel/HBoxContainer/EnergyGroup"]
+custom_minimum_size = Vector2(24, 24)
 layout_mode = 2
-text = "❤️ 3"
-label_settings = SubResource("LabelSettings_frjd7")
+texture = ExtResource("4_igist")
+stretch_mode = 5
+
+[node name="ValEnergy" type="Label" parent="HUD/MarginContainer/LeftSidebar/StatsPanel/HBoxContainer/EnergyGroup"]
+layout_mode = 2
+text = "50"
+
+[node name="LifeGroup" type="HBoxContainer" parent="HUD/MarginContainer/LeftSidebar/StatsPanel/HBoxContainer"]
+layout_mode = 2
+
+[node name="IconHP" type="TextureRect" parent="HUD/MarginContainer/LeftSidebar/StatsPanel/HBoxContainer/LifeGroup"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+texture = ExtResource("5_qmm20")
+stretch_mode = 5
+
+[node name="ValHP" type="Label" parent="HUD/MarginContainer/LeftSidebar/StatsPanel/HBoxContainer/LifeGroup"]
+layout_mode = 2
+text = "3"
+
+[node name="DayGroup" type="HBoxContainer" parent="HUD/MarginContainer/LeftSidebar/StatsPanel/HBoxContainer"]
+layout_mode = 2
+
+[node name="IconDay" type="TextureRect" parent="HUD/MarginContainer/LeftSidebar/StatsPanel/HBoxContainer/DayGroup"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+texture = ExtResource("6_qmm20")
+stretch_mode = 5
+
+[node name="ValDay" type="Label" parent="HUD/MarginContainer/LeftSidebar/StatsPanel/HBoxContainer/DayGroup"]
+layout_mode = 2
+label_settings = SubResource("LabelSettings_ebvj2")
 
 [node name="InventoryList" type="VBoxContainer" parent="HUD/MarginContainer/LeftSidebar"]
 layout_mode = 2
@@ -64,6 +94,19 @@ visible = false
 
 [node name="SaveLoadMenu" parent="HUD" instance=ExtResource("6_frjd7")]
 visible = false
+
+[node name="GameActionBar" parent="HUD" instance=ExtResource("6_04882")]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -58.0
+offset_top = -75.0
+offset_right = 58.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
 
 [node name="ResultWindow" parent="." instance=ExtResource("6_0mnoj")]
 visible = false

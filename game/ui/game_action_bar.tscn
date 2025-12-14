@@ -1,0 +1,31 @@
+[gd_scene load_steps=3 format=3 uid="uid://dy3f8i4akcqem"]
+
+[ext_resource type="Script" uid="uid://4dsiryp1ao3t" path="res://game/ui/game_action_bar.gd" id="1_amva1"]
+[ext_resource type="Texture2D" uid="uid://coec1o2safr02" path="res://assets/icons/icon_camp.png" id="2_vtusa"]
+
+[node name="GameActionBar" type="PanelContainer"]
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_amva1")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="BtnCamp" type="Button" parent="MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+icon = ExtResource("2_vtusa")
+flat = true
+expand_icon = true
+
+[node name="BtnWait" type="Button" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="BtnSkill" type="Button" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2

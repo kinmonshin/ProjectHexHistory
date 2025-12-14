@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://c7t8tq2s2agtv" path="res://assets/tiles/kare01.png" id="2_du4nq"]
 
 [node name="Player" type="Node2D"]
+scale = Vector2(2, 2)
 script = ExtResource("1_w5y0b")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]

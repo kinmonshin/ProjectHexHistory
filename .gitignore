@@ -1,18 +1,11 @@
 # Godot 4+ specific ignores
 .godot/
-
-# Imported translations (optional)
 *.translation
+export_presets.cfg
 
-# Mono-specific ignores (if you use C#)
-.mono/
+# Imported assets (optional, but good practice if source assets act weird)
+*.import
 
-# Any files and folders that you want to ignore
-# For example, to ignore a folder called "secret_stuff":
-# secret_stuff/
-
-# Your personal files to ignore
-*.txt
-*.pck
-*.exe
-exports/
+# System files
+.DS_Store
+Thumbs.db
